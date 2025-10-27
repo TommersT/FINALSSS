@@ -27,3 +27,7 @@ args = "cd draw && mvn exec:java"
 
 [workflows.workflow.metadata]
 outputType = "vnc"
+
+[[ports]]
+localPort = 45961
+externalPort = 80
