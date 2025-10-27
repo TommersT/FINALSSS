@@ -32,17 +32,17 @@ public final class  ScalerService {
             shape.getLocation().y += dy;
             shape.setWidth(width - dx);
             shape.setHeight(height - dy);
-        } if(shape.getSelectionMode() == SelectionMode.LowerLeft) {
+        } else if(shape.getSelectionMode() == SelectionMode.LowerLeft) {
             shape.getLocation().x += dx;
-            shape.setWidth(width -dx);
+            shape.setWidth(width - dx);
             shape.setHeight(height + dy);
         } else if(shape.getSelectionMode() == SelectionMode.UpperRight){
             shape.getLocation().y += dy;
             shape.setWidth(width + dx);
             shape.setHeight(height - dy);
-        } if(shape.getSelectionMode() == SelectionMode.LowerRight){
+        } else if(shape.getSelectionMode() == SelectionMode.LowerRight){
             shape.setWidth(width + dx);
-            shape.setHeight(height+ dy);
+            shape.setHeight(height + dy);
         } else if(shape.getSelectionMode() == SelectionMode.MiddleRight){
             shape.setWidth(width + dx);
         } else if(shape.getSelectionMode() == SelectionMode.MiddleLeft){

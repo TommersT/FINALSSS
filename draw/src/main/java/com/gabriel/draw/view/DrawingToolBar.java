@@ -20,59 +20,46 @@ public class DrawingToolBar extends JToolBar {
         this.actionListener = actionListener;
         addButtons();
 
-        textArea = new JTextArea(5, 30);
-        textArea.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(textArea);
-        add(scrollPane, BorderLayout.CENTER);
-
         //Lay out the main panel.
-        setPreferredSize(new Dimension(200, 30));
-        setBackground(Color.GREEN);
+        setPreferredSize(new Dimension(200, 35));
     }
 
     protected void addButtons() {
         JButton button = null;
-        button = makeNavigationButton("rect", ActionCommand.RECT, "Draw a rectangle",ActionCommand.RECT);
-        button.addActionListener(actionListener);
+        
+        button = makeNavigationButton("undo", ActionCommand.UNDO, "Undo", "Undo");
         add(button);
-
-        button = makeNavigationButton("line", ActionCommand.LINE, "Draw a line",ActionCommand.LINE);
-        button.addActionListener(actionListener);
+        
+        button = makeNavigationButton("redo", ActionCommand.REDO, "Redo", "Redo");
         add(button);
-
-        button = makeNavigationButton("ellipse", ActionCommand.ELLIPSE,"Draw an ellipse",ActionCommand.ELLIPSE);
-        button.addActionListener(actionListener);
-        add(button);
-
-        button = makeNavigationButton("text",ActionCommand.TEXT,"Add a text",ActionCommand.TEXT);
-        button.addActionListener(actionListener);
-        add(button);
-
-        button = makeNavigationButton("image",ActionCommand.IMAGE,"Add an  image",ActionCommand.IMAGE);
-        button.addActionListener(actionListener);
-        add(button);
-
-        button = makeNavigationButton("select",ActionCommand.SELECT,"Switch to select",ActionCommand.SELECT);
-        button.addActionListener(actionListener);
-        add(button);
-
-        //separator
+        
         addSeparator();
-
-        //fourth button
-        button = new JButton("Another button");
-        button.setActionCommand("SOMETHING_ELSE");
-        button.setToolTipText("Something else");
-        button.addActionListener(actionListener);
-        button.addActionListener(actionListener);
+        
+        button = makeNavigationButton("select", ActionCommand.SELECT, "Select", "Select");
+        add(button);
+        
+        button = makeNavigationButton("rect", ActionCommand.RECT, "Rectangle", "Rectangle");
         add(button);
 
-        //fifth component is NOT a button!
-        JTextField textField = new JTextField("");
-        textField.setColumns(10);
-        textField.addActionListener(actionListener);
-        textField.setActionCommand("TEXT_ENTERED");
-        add(textField);
+        button = makeNavigationButton("ellipse", ActionCommand.ELLIPSE, "Ellipse", "Ellipse");
+        add(button);
+        
+        button = makeNavigationButton("line", ActionCommand.LINE, "Line", "Line");
+        add(button);
+
+        button = makeNavigationButton("text", ActionCommand.TEXT, "Text", "Text");
+        add(button);
+
+        button = makeNavigationButton("image", ActionCommand.IMAGE, "Image", "Image");
+        add(button);
+        
+        addSeparator();
+        
+        button = makeNavigationButton("color", ActionCommand.COLOR, "Color", "Color");
+        add(button);
+        
+        button = makeNavigationButton("fill", ActionCommand.FILL, "Fill", "Fill");
+        add(button);
     }
 
     protected JButton makeNavigationButton(String imageName,

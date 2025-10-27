@@ -55,16 +55,24 @@ public class DrawingMenuBar extends JMenuBar {
         menu = new JMenu("Edit");
         menu.setMnemonic(KeyEvent.VK_E);
 
-        menuItem = new JMenuItem("Umdo");
+        menuItem = new JMenuItem("Undo");
         menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK));
         menuItem.addActionListener(actionListener);
         menuItem.setActionCommand(ActionCommand.UNDO);
         menu.add(menuItem);
 
         menuItem = new JMenuItem("Redo");
-        menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));;
+        menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
         menuItem.addActionListener(actionListener);
         menuItem.setActionCommand(ActionCommand.REDO);
+        menu.add(menuItem);
+        
+        menu.addSeparator();
+        
+        menuItem = new JMenuItem("Delete");
+        menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0));
+        menuItem.addActionListener(actionListener);
+        menuItem.setActionCommand(ActionCommand.DELETE);
         menu.add(menuItem);
 
         add(menu);
@@ -119,6 +127,36 @@ public class DrawingMenuBar extends JMenuBar {
         menuItem.addActionListener(actionListener);
         menu.add(menuItem);
 
+        this.add(menu);
+        
+        // Arrange (Layer) menu
+        menu = new JMenu("Arrange");
+        menu.setMnemonic(KeyEvent.VK_A);
+        
+        menuItem = new JMenuItem("Bring to Front");
+        menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_CLOSE_BRACKET, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
+        menuItem.setActionCommand(ActionCommand.BRING_TO_FRONT);
+        menuItem.addActionListener(actionListener);
+        menu.add(menuItem);
+        
+        menuItem = new JMenuItem("Bring Forward");
+        menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_CLOSE_BRACKET, InputEvent.CTRL_DOWN_MASK));
+        menuItem.setActionCommand(ActionCommand.BRING_FORWARD);
+        menuItem.addActionListener(actionListener);
+        menu.add(menuItem);
+        
+        menuItem = new JMenuItem("Send Backward");
+        menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_OPEN_BRACKET, InputEvent.CTRL_DOWN_MASK));
+        menuItem.setActionCommand(ActionCommand.SEND_BACKWARD);
+        menuItem.addActionListener(actionListener);
+        menu.add(menuItem);
+        
+        menuItem = new JMenuItem("Send to Back");
+        menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_OPEN_BRACKET, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK));
+        menuItem.setActionCommand(ActionCommand.SEND_TO_BACK);
+        menuItem.addActionListener(actionListener);
+        menu.add(menuItem);
+        
         this.add(menu);
 
     }

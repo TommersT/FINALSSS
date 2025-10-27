@@ -33,6 +33,7 @@ public interface AppService {
     void scale(Shape shape, Point end);
 
     void create(Shape shape);
+    void insertAt(Shape shape, int index);
     void delete(Shape shape);
 
     void close();
@@ -83,4 +84,9 @@ public interface AppService {
     void setFontSize(int fontSize);
     void setFontFamily(String family);
     void setFontStyle(int style);
+    
+    void bringToFront(Shape shape);
+    void sendToBack(Shape shape);
+    void bringForward(Shape shape);
+    void sendBackward(Shape shape);
 }

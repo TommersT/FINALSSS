@@ -14,5 +14,10 @@ public class ActionCommand {
     static final public String SAVE = "save";
     static final public String OPEN = "open";
     static final public String SAVEAS = "saveas";
-    static final public String NEW= "new";
+    static final public String NEW = "new";
+    static final public String BRING_TO_FRONT = "bringToFront";
+    static final public String SEND_TO_BACK = "sendToBack";
+    static final public String BRING_FORWARD = "bringForward";
+    static final public String SEND_BACKWARD = "sendBackward";
+    static final public String DELETE = "delete";
 }

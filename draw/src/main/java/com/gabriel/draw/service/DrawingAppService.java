@@ -157,6 +157,12 @@ public class DrawingAppService implements AppService {
     }
 
     @Override
+    public void insertAt(Shape shape, int index) {
+        this.drawing.getShapes().add(index, shape);
+        if (drawingView != null) drawingView.repaint();
+    }
+
+    @Override
     public void delete(Shape shape) {
         drawing.getShapes().remove(shape);
         if (drawingView != null) drawingView.repaint();
@@ -468,5 +474,45 @@ public class DrawingAppService implements AppService {
             selectedShape.setFont(font);
         }
         if (drawingView != null) drawingView.repaint();
+    }
+    
+    @Override
+    public void bringToFront(Shape shape) {
+        List<Shape> shapes = drawing.getShapes();
+        if (shapes.remove(shape)) {
+            shapes.add(shape);
+            if (drawingView != null) drawingView.repaint();
+        }
+    }
+    
+    @Override
+    public void sendToBack(Shape shape) {
+        List<Shape> shapes = drawing.getShapes();
+        if (shapes.remove(shape)) {
+            shapes.add(0, shape);
+            if (drawingView != null) drawingView.repaint();
+        }
+    }
+    
+    @Override
+    public void bringForward(Shape shape) {
+        List<Shape> shapes = drawing.getShapes();
+        int index = shapes.indexOf(shape);
+        if (index >= 0 && index < shapes.size() - 1) {
+            shapes.remove(index);
+            shapes.add(index + 1, shape);
+            if (drawingView != null) drawingView.repaint();
+        }
+    }
+    
+    @Override
+    public void sendBackward(Shape shape) {
+        List<Shape> shapes = drawing.getShapes();
+        int index = shapes.indexOf(shape);
+        if (index > 0) {
+            shapes.remove(index);
+            shapes.add(index - 1, shape);
+            if (drawingView != null) drawingView.repaint();
+        }
     }
 }

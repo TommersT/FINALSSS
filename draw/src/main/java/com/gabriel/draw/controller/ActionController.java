@@ -4,6 +4,7 @@ import com.gabriel.draw.service.XmlDocumentService;
 import com.gabriel.drawfx.ActionCommand;
 import com.gabriel.drawfx.ShapeMode;
 import com.gabriel.drawfx.model.Drawing;
+import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.AppService;
 import lombok.Setter;
 // FIX: Changed wrong import package from org.drjekyll.fontchooser to com.gabriel.fontchooser
@@ -113,6 +114,31 @@ public class ActionController implements ActionListener {
 
             // TODO Insert the handler for the File menuitems.
 
+        } else if (ActionCommand.DELETE.equals(cmd)) {
+            Shape selectedShape = appService.getSelectedShape();
+            if (selectedShape != null) {
+                appService.delete(selectedShape);
+            }
+        } else if (ActionCommand.BRING_TO_FRONT.equals(cmd)) {
+            Shape selectedShape = appService.getSelectedShape();
+            if (selectedShape != null) {
+                appService.bringToFront(selectedShape);
+            }
+        } else if (ActionCommand.SEND_TO_BACK.equals(cmd)) {
+            Shape selectedShape = appService.getSelectedShape();
+            if (selectedShape != null) {
+                appService.sendToBack(selectedShape);
+            }
+        } else if (ActionCommand.BRING_FORWARD.equals(cmd)) {
+            Shape selectedShape = appService.getSelectedShape();
+            if (selectedShape != null) {
+                appService.bringForward(selectedShape);
+            }
+        } else if (ActionCommand.SEND_BACKWARD.equals(cmd)) {
+            Shape selectedShape = appService.getSelectedShape();
+            if (selectedShape != null) {
+                appService.sendBackward(selectedShape);
+            }
         }
     }
 }

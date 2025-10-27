@@ -2,6 +2,9 @@ package com.gabriel.draw.service;
 
 import com.gabriel.draw.command.AddShapeCommand;
 import com.gabriel.draw.command.SetDrawModeCommand;
+import com.gabriel.draw.command.MoveCommand;
+import com.gabriel.draw.command.ScaleCommand;
+import com.gabriel.draw.command.DeleteShapeCommand;
 import com.gabriel.drawfx.DrawMode;
 import com.gabriel.drawfx.ShapeMode;
 import com.gabriel.drawfx.command.Command;
@@ -96,17 +99,23 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void move(Point start, Point end) {
-        appService.move(start, end);
+        if (!appService.getSelectedShapes().isEmpty()) {
+            Command command = new MoveCommand(appService, start, end);
+            CommandService.ExecuteCommand(command);
+        } else {
+            appService.move(start, end);
+        }
     }
 
     @Override
     public void scale(Point start, Point end) {
-
+        appService.scale(start, end);
     }
 
     @Override
     public void scale(Shape shape, Point start, Point end) {
-        appService.scale(shape, start, end);
+        Command command = new ScaleCommand(appService, shape, start, end);
+        CommandService.ExecuteCommand(command);
     }
 
     @Override
@@ -121,8 +130,14 @@ public class DrawingCommandAppService implements AppService {
     }
 
     @Override
+    public void insertAt(Shape shape, int index) {
+        appService.insertAt(shape, index);
+    }
+
+    @Override
     public void delete(Shape shape) {
-        appService.delete(shape);
+        Command command = new DeleteShapeCommand(appService, shape);
+        CommandService.ExecuteCommand(command);
     }
 
     @Override
@@ -313,5 +328,25 @@ public class DrawingCommandAppService implements AppService {
     public void setFontStyle(int style) {
         // This will be wrapped by the listener
         appService.setFontStyle(style);
+    }
+    
+    @Override
+    public void bringToFront(Shape shape) {
+        appService.bringToFront(shape);
+    }
+    
+    @Override
+    public void sendToBack(Shape shape) {
+        appService.sendToBack(shape);
+    }
+    
+    @Override
+    public void bringForward(Shape shape) {
+        appService.bringForward(shape);
+    }
+    
+    @Override
+    public void sendBackward(Shape shape) {
+        appService.sendBackward(shape);
     }
 }
