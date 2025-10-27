@@ -1,0 +1,437 @@
+PROJECT SPECIFICATION PROMPT
+
+Goal: Implement and display a PropertySheet table that dynamically reflects and controls the properties of selected shapes on a canvas application.
+
+
+
+ PROPERTY SHEET REQUIREMENTS
+
+Table to show in presentation (PropertySheet folder):
+
+
+
+The PropertySheet should display the following properties:
+
+
+
+
+Property
+
+Description
+
+
+
+
+
+
+
+Width
+
+Width of the shape
+
+
+
+
+Height
+
+Height of the shape
+
+
+
+
+Thickness of the Line
+
+Border thickness of the shape
+
+
+
+
+Fill Color
+
+Fill color of the shape
+
+
+
+
+Current Shape
+
+Type of shape selected
+
+
+
+
+X Location
+
+X-coordinate of the shape
+
+
+
+
+Y Location
+
+Y-coordinate of the shape
+
+
+
+
+
+
+
+
+
+
+If no shape is selected → all fields should be null.
+
+
+
+
+If the shape is manually modified, the values in the PropertySheet should update automatically.
+
+
+
+
+If a value is edited in the PropertySheet, the shape should update accordingly.
+
+
+
+
+When a shape is drawn on the canvas, its information should be automatically reflected in the PropertySheet.
+
+
+
+
+All of the information in the gallery should be displayed in one row only.
+
+
+
+
+
+
+
+ TEXT PROPERTIES (ADDITIONAL FEATURE)
+
+
+
+Add an additional property for text, displayed in the middle of a box with 8 handles.
+
+
+
+
+Include the following text properties:
+
+
+
+
+Property
+
+Description
+
+
+
+ADD FONT DIALOG BOX
+
+
+
+
+Font Family
+
+Dropdown menu for selecting font family
+
+
+
+
+Font Size
+
+Numeric or dropdown for text size
+
+
+
+
+Font Style
+
+Options: Underline, Bold, Italic
+
+
+
+
+Alignment
+
+Options: Justified, Left, Right
+
+
+
+
+
+
+
+
+
+
+
+
+
+ EVENT HANDLING
+
+
+
+Add PropertyEventListener (new folder)
+
+
+
+Handles all property changes between shapes and the PropertySheet.
+
+
+
+
+All interactions (changes to size, color, font, etc.) must trigger updates both ways.
+
+Undo/Redo functionality must be implemented and work with all property changes oncluding the changes in size, move location, color etc.
+
+
+
+
+
+
+
+ ENHANCEMENTS
+
+
+
+Gradient Option:
+
+
+
+Add a gradient option in the color picker.
+
+
+
+
+
+
+
+
+File Management:
+
+
+
+Application should support Save, Open, and Save As operations.
+
+
+
+
+
+
+
+
+Layers:
+
+
+
+Add layer management system:
+
+
+
+Can add a layer.
+
+
+
+
+Can change the order of layers.
+
+
+
+
+
+
+
+
+
+
+
+
+Multi-Selection:
+
+
+
+User can select two or more shapes in SearchService.
+
+
+
+
+They can be moved simultaneously using MoveService.
+
+
+
+
+
+
+
+
+Toolbar:
+
+
+
+
+
+
+
+Object Association:
+
+
+
+Enable association of different objects (grouping or linking).
+
+
+
+
+
+
+
+
+
+
+
+ IMAGE & CANVAS FEATURES
+
+
+
+Insert Image:
+
+
+
+User can insert images into the canvas.
+
+
+
+
+Images can be resized and scaled like shapes.
+
+
+
+
+
+
+
+
+Canvas Scroll:
+
+
+
+Add a scroll button for the entire canvas page (on the left side of the property bar).
+
+
+
+
+
+
+
+
+Shape Fill:
+
+
+
+Shapes can be filled with selected colors.
+
+
+
+
+
+
+
+
+Drawing Controller:
+
+
+
+Add status panel in the drawing controller.
+
+
+
+
+
+
+
+
+
+
+
+ SPLASH SCREEN FEATURE
+
+
+
+Add Splash Screen (Welcome Screen):
+
+
+
+Folder: SplashPanel
+
+
+
+
+Use a GPanel with an image.
+
+
+
+
+When clicked, it should open and display the main application (main program window).
+
+
+
+
+
+
+
+
+
+
+
+ Summary of Key Components to Add:
+
+
+
+PropertySheet (with table & binding to shapes)
+
+
+
+
+PropertyEventListener (for event handling)
+
+
+
+
+SplashPanel (welcome screen)
+
+
+
+
+DrawingController updates (status panel)
+
+
+
+
+SearchService + MoveService enhancements
+
+
+
+
+Gradient Color Picker
+
+
+
+
+Layer management
+
+
+
+
+Undo/Redo system
+
+
+
+
+Image insertion & scaling
+
+
+
+
+at the end of the major improvements, give me the exact location where folders i can find the codes for that specific enhancements. thanks
