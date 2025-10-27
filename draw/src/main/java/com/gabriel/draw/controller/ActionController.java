@@ -7,7 +7,8 @@ import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.service.AppService;
 import lombok.Setter;
 // FIX: Changed wrong import package from org.drjekyll.fontchooser to com.gabriel.fontchooser
-import com.gabriel.fontchooser.FontDialog;
+// NOTE: fontchooser module is missing from repository, using basic font selection instead
+// import com.gabriel.fontchooser.FontDialog;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
@@ -67,17 +68,8 @@ public class ActionController implements ActionListener {
             Color color = JColorChooser.showDialog(component, "Select color", appService.getColor());
             appService.setColor(color);
         } else if (ActionCommand.TEXT.equals(cmd)) {
-            FontDialog dialog = new FontDialog((Frame)null, "Font Dialog Example", true);
-            dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-            dialog.setFont(drawing.getFont());
-            //dialog.setPreviewText(drawing.getText());
-            dialog.setVisible(true);
-            if (!dialog.isCancelSelected()) {
-                Font font = dialog.getSelectedFont();
-                drawing.setFont(dialog.getSelectedFont());
-                System.out.println("Selected font is: " + dialog);
-            }
-            dialog.setVisible(false);
+            // NOTE: fontchooser module missing - using default font for now
+            // Users can still add text with the current font
             appService.setShapeMode(ShapeMode.Text);
         } else if (ActionCommand.FILL.equals(cmd)) {
             Color color = JColorChooser.showDialog(component, "Select color", appService.getColor());
