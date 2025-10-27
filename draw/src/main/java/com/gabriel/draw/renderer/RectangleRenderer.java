@@ -28,15 +28,11 @@ public class RectangleRenderer extends ShapeRenderer {
         if (xor) {
             g2.setXORMode(shape.getColor());
         } else {
-            g2.setColor(shape.getColor());
             if(shape.getFill() != null){
-                GradientPaint gp = new GradientPaint(0, 0, shape.getFill(), 0, height, Color.WHITE);
-                g2.setPaint(gp);
-
-                //g2.setColor(shape.getFill());
+                g2.setColor(shape.getFill());
                 g2.fillRect(x,y,width, height);
-                g2.setColor(shape.getColor());
             }
+            g2.setColor(shape.getColor());
         }
         g2.drawRect(x, y, width, height);
         super.render(g, shape, xor);

@@ -60,7 +60,27 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
     }
     @Override
     public void mouseClicked(MouseEvent e) {
-
+        if (e.getClickCount() == 2 && appService.getShapeMode() == ShapeMode.Select) {
+            Shape selectedShape = drawing.getSelectedShape();
+            if (selectedShape != null && selectedShape.getClass().getSimpleName().equals("Text")) {
+                String currentText = selectedShape.getText();
+                if (currentText == null) currentText = "";
+                String newText = JOptionPane.showInputDialog(
+                    drawingView,
+                    "Edit text:",
+                    currentText
+                );
+                if (newText != null) {
+                    selectedShape.setText(newText);
+                    selectedShape.setWidth(0);
+                    selectedShape.setHeight(0);
+                    drawingView.repaint();
+                    if(propertySheet != null) {
+                        propertySheet.populateTable(appService);
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -87,10 +107,23 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                         currentShape.getRendererService().render(drawingView.getGraphics(), currentShape, false);
                         break;
                     case Text:
-                        currentShape = new Text(start);
-                        currentShape.setColor(appService.getColor());
-                        currentShape.getRendererService().render(drawingView.getGraphics(), currentShape, true);
-                        appService.setDrawMode(DrawMode.MousePressed);
+                        String textContent = JOptionPane.showInputDialog(
+                            drawingView,
+                            "Enter text:",
+                            "Text Input",
+                            JOptionPane.PLAIN_MESSAGE
+                        );
+                        if (textContent != null && !textContent.trim().isEmpty()) {
+                            drawing.setText(textContent);
+                            currentShape = new Text(start);
+                            currentShape.setColor(appService.getColor());
+                            currentShape.setText(textContent);
+                            currentShape.setFont(appService.getFont());
+                            currentShape.getRendererService().render(drawingView.getGraphics(), currentShape, true);
+                            appService.setDrawMode(DrawMode.MousePressed);
+                        } else {
+                            return;
+                        }
                         break;
                     case Ellipse:
                         currentShape = new Ellipse(start);
@@ -117,36 +150,25 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
         if(appService.getDrawMode() == DrawMode.MousePressed) {
             if (appService.getShapeMode() == ShapeMode.Select) {
                 Shape selectedShape = drawing.getSelectedShape();
-                if (selectedShape.getSelectionMode() == SelectionMode.None){
-                    List<Shape> shapes = drawing.getShapes();
-                    for (Shape shape : shapes) {
-                        if (shape.isSelected()) {
-                            shape.getRendererService().render(drawingView.getGraphics(), shape, true);
-                            appService.move(shape, start, end);
-                            shape.getRendererService().render(drawingView.getGraphics(), shape, false);
-                        }
+                if (selectedShape != null) {
+                    if (selectedShape.getSelectionMode() != SelectionMode.None){
+                        Normalizer.normalize(selectedShape);
                     }
                 }
-                else {
-                    appService.scale(selectedShape, start, end);
-                    Normalizer.normalize(selectedShape);
-                    drawingView.repaint();
-                }
             }
-            else {
-                currentShape.getRendererService().render(drawingView.getGraphics(), currentShape, true);
+            else if(currentShape != null) {
                 currentShape.setText(drawing.getText());
                 currentShape.setFont(drawing.getFont());
                 Normalizer.normalize(currentShape);
                 appService.create(currentShape);
                 currentShape.setSelected(true);
-//                currentShape.getRendererService().render(drawingView.getGraphics(), currentShape, false);
                 drawing.setSelectedShape(currentShape);
-                drawingView.repaint();
             }
             appService.setDrawMode(DrawMode.Idle);
         }
-        propertySheet.populateTable(appService);
+        if(propertySheet != null) {
+            propertySheet.populateTable(appService);
+        }
         drawingView.repaint();
     }
 
@@ -167,27 +189,28 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
             if(drawing.getShapeMode() == ShapeMode.Select){
                 Shape selectedShape = drawing.getSelectedShape();
                 if(selectedShape != null){
+                    drawingView.repaint();
                     if(selectedShape.getSelectionMode() == SelectionMode.None){
                         List<Shape> shapes =drawing.getShapes();
                         for(Shape shape : shapes) {
                             if (shape.isSelected()) {
-                                shape.getRendererService().render(drawingView.getGraphics(), shape, true);
                                 appService.move(shape, start, end);
-                                shape.getRendererService().render(drawingView.getGraphics(), shape, true);
                             }
                         }
                     }
                     else {
                         appService.scale(selectedShape, start, end);
                     }
+                    drawingView.repaint();
                 }
                 start = end;
 
             }
             else {
-                currentShape.getRendererService().render(drawingView.getGraphics(), currentShape, true);
-                appService.scale(currentShape, end);
-                currentShape.getRendererService().render(drawingView.getGraphics(), currentShape, true);
+                if(currentShape != null) {
+                    appService.scale(currentShape, end);
+                    drawingView.repaint();
+                }
             }
         }
     }

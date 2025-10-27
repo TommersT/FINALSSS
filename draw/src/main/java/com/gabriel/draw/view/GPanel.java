@@ -12,7 +12,7 @@ public class GPanel extends JPanel {
     private BufferedImage image;
 
     public GPanel(String imgFile){
-            try (InputStream is = getClass().getResourceAsStream("/" + imgFile + ".jpg")) {
+            try (InputStream is = getClass().getResourceAsStream("/" + imgFile)) {
                 if (is == null) {
                     throw new IOException("Image not found: " + imgFile);
                 }

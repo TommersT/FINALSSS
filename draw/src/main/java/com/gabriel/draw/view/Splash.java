@@ -32,7 +32,7 @@ public class Splash extends JPanel implements MouseListener {
         setSize(width, height);
         setLayout(null);
 
-        gPanel = new GPanel("GoDraw");
+        gPanel = new GPanel("GoDraw.png");
         gPanel.setBounds(1100,700,150,50);
         gPanel.addMouseListener(this);
         this.add(gPanel);
@@ -61,8 +61,7 @@ public class Splash extends JPanel implements MouseListener {
             mf.setExtendedState(mf.getExtendedState() | JFrame.MAXIMIZED_BOTH);
             mf.setVisible(true);
 
-            topFrame.setVisible(false);;
-            this.dispatchEvent(new WindowEvent(topFrame, WindowEvent.WINDOW_CLOSING));
+            topFrame.dispose();
         }
     }
 

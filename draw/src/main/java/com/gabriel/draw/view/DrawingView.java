@@ -1,7 +1,5 @@
 package com.gabriel.draw.view;
 
-import com.gabriel.draw.controller.DrawingController;
-import com.gabriel.draw.controller.DrawingWindowController;
 import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.AppService;
@@ -14,15 +12,12 @@ public class DrawingView extends JPanel {
 
     public DrawingView(AppService appService){
         this.appService  = appService;
-        JTextArea textArea = new JTextArea();
-        add(textArea);
-        textArea.setVisible(true);
-
+        setBackground(Color.WHITE);
     }
 
     @Override
-    public void paint(Graphics g) {
-        super.paint(g);
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
         Drawing drawing = appService.getDrawing();
         List<Shape> shapes  = drawing.getShapes();
         for(Shape shape : shapes){

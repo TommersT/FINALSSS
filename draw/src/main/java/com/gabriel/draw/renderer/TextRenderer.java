@@ -14,19 +14,38 @@ public class TextRenderer extends ShapeRenderer {
 
         int x = shape.getLocation().x;
         int y = shape.getLocation().y;
-        int width = shape.getWidth() ;
-        int height = shape.getHeight();
 
         Graphics2D g2 = (Graphics2D) g;
+        g2.setFont(shape.getFont());
         g2.setStroke(new BasicStroke(shape.getThickness()));
+
+        String textContent = shape.getText();
+        if (textContent == null || textContent.isEmpty()) {
+            textContent = "Text";
+        }
+
+        FontMetrics fm = g2.getFontMetrics();
+        int textWidth = fm.stringWidth(textContent);
+        int textHeight = fm.getHeight();
+
+        if (shape.getWidth() == 0 || shape.getHeight() == 0) {
+            shape.setWidth(textWidth + 10);
+            shape.setHeight(textHeight + 5);
+        }
+
+        int width = shape.getWidth();
+        int height = shape.getHeight();
 
         if (xor) {
             g2.setXORMode(shape.getColor());
-            g2.drawRect(x, y, width, height);
+            g2.drawRect(x, y - fm.getAscent(), width, height);
         } else {
+            if (shape.getFill() != null) {
+                g2.setColor(shape.getFill());
+                g2.fillRect(x, y - fm.getAscent(), width, height);
+            }
             g2.setColor(shape.getColor());
-            g2.setFont(shape.getFont());
-            g2.drawString(shape.getText(), shape.getLocation().x, shape.getLocation().y);
+            g2.drawString(textContent, x + 5, y);
         }
         super.render(g, shape, xor);
     }
