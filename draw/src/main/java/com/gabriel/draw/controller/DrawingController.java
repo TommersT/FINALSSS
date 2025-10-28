@@ -24,6 +24,8 @@ import java.awt.event.*;
 public class DrawingController  implements MouseListener, MouseMotionListener, KeyListener {
     Point start;
     private Point end;
+    private Point dragStartPoint;
+    private boolean isDraggingForMoveOrScale = false;
 
     private final AppService appService;
     private final Drawing drawing;
@@ -94,6 +96,8 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
     public void mousePressed(MouseEvent e) {
         if(appService.getDrawMode() == DrawMode.Idle) {
             start = e.getPoint();
+            dragStartPoint = new Point(start);
+            isDraggingForMoveOrScale = false;
             ShapeMode currentShapeMode = appService.getShapeMode();
             if(currentShapeMode == ShapeMode.Select) {
                 appService.search(start, !e.isControlDown());
@@ -169,6 +173,17 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                         Normalizer.normalize(selectedShape);
                     }
                 }
+                
+                if (isDraggingForMoveOrScale && dragStartPoint != null) {
+                    ToolMode toolMode = appService.getToolMode();
+                    if (toolMode == ToolMode.MOVE || (toolMode == ToolMode.SELECT && selectedShape != null && selectedShape.getSelectionMode() == SelectionMode.None)) {
+                        appService.move(dragStartPoint, end);
+                    } else if (toolMode == ToolMode.SCALE || (toolMode == ToolMode.SELECT && selectedShape != null && selectedShape.getSelectionMode() != SelectionMode.None)) {
+                        if (selectedShape != null) {
+                            appService.scale(selectedShape, dragStartPoint, end);
+                        }
+                    }
+                }
             }
             else if(currentShape != null) {
                 currentShape.setText(drawing.getText());
@@ -177,6 +192,7 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                 appService.create(currentShape);
             }
             appService.setDrawMode(DrawMode.Idle);
+            isDraggingForMoveOrScale = false;
         }
         if(propertySheet != null) {
             propertySheet.populateTable(appService);
@@ -202,6 +218,7 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                 ToolMode toolMode = appService.getToolMode();
                 Shape selectedShape = drawing.getSelectedShape();
                 if(selectedShape != null){
+                    isDraggingForMoveOrScale = true;
                     java.awt.Rectangle oldBounds = null;
                     java.awt.Rectangle newBounds = null;
 
@@ -218,7 +235,12 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                                     oldBounds.add(new java.awt.Rectangle(loc.x - margin, loc.y - margin,
                                         shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin));
                                 }
-                                appService.move(shape, start, end);
+                                
+                                int dx = end.x - start.x;
+                                int dy = end.y - start.y;
+                                shape.getLocation().x += dx;
+                                shape.getLocation().y += dy;
+                                
                                 loc = shape.getLocation();
                                 if(newBounds == null) {
                                     newBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
@@ -236,11 +258,41 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                         oldBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
                             selectedShape.getWidth() + 2 * margin, selectedShape.getHeight() + 2 * margin);
                         
+                        Point scaleEnd = end;
                         if (e.isShiftDown()) {
-                            Point adjustedEnd = maintainAspectRatio(selectedShape, start, end);
-                            appService.scale(selectedShape, start, adjustedEnd);
-                        } else {
-                            appService.scale(selectedShape, start, end);
+                            scaleEnd = maintainAspectRatio(selectedShape, start, end);
+                        }
+                        
+                        int dx = scaleEnd.x - start.x;
+                        int dy = scaleEnd.y - start.y;
+                        int height = selectedShape.getHeight();
+                        int width = selectedShape.getWidth();
+                        if(selectedShape.getSelectionMode() == SelectionMode.UpperLeft) {
+                            selectedShape.getLocation().x += dx;
+                            selectedShape.getLocation().y += dy;
+                            selectedShape.setWidth(width - dx);
+                            selectedShape.setHeight(height - dy);
+                        } else if(selectedShape.getSelectionMode() == SelectionMode.LowerLeft) {
+                            selectedShape.getLocation().x += dx;
+                            selectedShape.setWidth(width - dx);
+                            selectedShape.setHeight(height + dy);
+                        } else if(selectedShape.getSelectionMode() == SelectionMode.UpperRight){
+                            selectedShape.getLocation().y += dy;
+                            selectedShape.setWidth(width + dx);
+                            selectedShape.setHeight(height - dy);
+                        } else if(selectedShape.getSelectionMode() == SelectionMode.LowerRight){
+                            selectedShape.setWidth(width + dx);
+                            selectedShape.setHeight(height + dy);
+                        } else if(selectedShape.getSelectionMode() == SelectionMode.MiddleRight){
+                            selectedShape.setWidth(width + dx);
+                        } else if(selectedShape.getSelectionMode() == SelectionMode.MiddleLeft){
+                            selectedShape.setWidth(width - dx);
+                            selectedShape.getLocation().x += dx;
+                        } else if(selectedShape.getSelectionMode() == SelectionMode.MiddleTop) {
+                            selectedShape.setHeight(height - dy);
+                            selectedShape.getLocation().y += dy;
+                        } else if(selectedShape.getSelectionMode() == SelectionMode.MiddleBottom){
+                            selectedShape.setHeight(height + dy);
                         }
                         
                         loc = selectedShape.getLocation();
