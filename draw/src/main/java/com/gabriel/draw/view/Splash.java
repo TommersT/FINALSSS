@@ -21,21 +21,18 @@ public class Splash extends JPanel implements MouseListener {
     public Splash() {
         try {
             imageLoader = new ImageLoader();
-            image = imageLoader.loadImage("/tomtaruc.jpg");
-//            image = ImageIO.read(new File("src\\main\\resources\\nette1440_800.png"));
+            image = imageLoader.loadImage("/splash.png");
             height = image.getHeight();
             width = image.getWidth();
 
         } catch (IOException ex) {
-            // handle exception...
+            ex.printStackTrace();
         }
         setSize(width, height);
-        setLayout(null);
-
-        gPanel = new GPanel("GoDraw.png");
-        gPanel.setBounds(1100,700,150,50);
-        gPanel.addMouseListener(this);
-        this.add(gPanel);
+        setLayout(new BorderLayout());
+        setBackground(new Color(100, 120, 200));
+        setCursor(new Cursor(Cursor.HAND_CURSOR));
+        addMouseListener(this);
     }
     @Override
     public void paintComponent(Graphics g) {
@@ -54,15 +51,13 @@ public class Splash extends JPanel implements MouseListener {
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        if(e.getSource()==gPanel){
-            JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+        JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
 
-            DrawingFrame mf = new DrawingFrame();
-            mf.setExtendedState(mf.getExtendedState() | JFrame.MAXIMIZED_BOTH);
-            mf.setVisible(true);
+        DrawingFrame mf = new DrawingFrame();
+        mf.setExtendedState(mf.getExtendedState() | JFrame.MAXIMIZED_BOTH);
+        mf.setVisible(true);
 
-            topFrame.dispose();
-        }
+        topFrame.dispose();
     }
 
     @Override
