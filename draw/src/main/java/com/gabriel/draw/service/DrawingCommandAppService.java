@@ -7,6 +7,7 @@ import com.gabriel.draw.command.ScaleCommand;
 import com.gabriel.draw.command.DeleteShapeCommand;
 import com.gabriel.drawfx.DrawMode;
 import com.gabriel.drawfx.ShapeMode;
+import com.gabriel.drawfx.ToolMode;
 import com.gabriel.drawfx.command.Command;
 import com.gabriel.drawfx.command.CommandService;
 import com.gabriel.drawfx.model.Drawing;
@@ -57,6 +58,16 @@ public class DrawingCommandAppService implements AppService {
         // We will do it in the PropertyEventListener for now
         // to handle both menu clicks and property sheet changes.
         appService.setShapeMode(shapeMode);
+    }
+
+    @Override
+    public ToolMode getToolMode() {
+        return appService.getToolMode();
+    }
+
+    @Override
+    public void setToolMode(ToolMode toolMode) {
+        appService.setToolMode(toolMode);
     }
 
     @Override
