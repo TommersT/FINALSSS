@@ -17,7 +17,48 @@ This is a multi-module Maven project with the following modules:
 - **prop**: Property management and validation
 - **batik**: Apache Batik integration for SVG support
 
-## Recent Changes (October 27, 2025)
+## Recent Changes (October 28, 2025)
+
+### Major Enhancements - UI/UX & Performance Improvements
+
+1. **Fixed SearchService Selection Logic**: 
+   - Implemented proper top-most shape detection by iterating through shapes backwards (last-drawn to first-drawn)
+   - Fixed single-click behavior to deselect all other shapes before selecting the clicked shape
+   - Implemented Ctrl+click toggle for multi-selection support
+   - Fixed empty-space click to deselect all shapes
+   - Critical fix: Resolved selection state inconsistency where deselected shapes remained as primary selection
+
+2. **Decoupled Creation from Selection**: 
+   - Removed automatic selection of newly created shapes in DrawingController
+   - Creation and selection are now separate actions for better user control
+   - Only the Select tool can now select shapes
+
+3. **Performance Optimization - Dirty Rectangle Repainting**: 
+   - Implemented dirty rectangle repainting in mouseDragged method
+   - Significantly improved drag/move/scale performance by only repainting affected areas
+   - Added 20-pixel margin around shapes to ensure handlers are repainted
+
+4. **Fixed Text Handle Alignment**: 
+   - Corrected TextRenderer to align selection handles with visual text bounds
+   - Used graphics context translation to offset handles by font ascent value
+   - Text selection handles now appear correctly at the visual top of text
+
+5. **Toolbar Improvements**: 
+   - Updated Select tool tooltip to "Select (for Move & Scale)" for better UX clarity
+   - Improved button styling with setFocusable(false) and setBorderPainted(true)
+   - All toolbar buttons display icons properly
+
+6. **Modern UI Look and Feel**: 
+   - Added Nimbus Look and Feel with fallback to system default
+   - Significantly improved application appearance and visual consistency
+   - Modern, professional appearance across all UI components
+
+7. **Command Pattern Verification**: 
+   - Verified all move and scale operations use commands for undo/redo
+   - MoveCommand and ScaleCommand properly capture state for undo/redo operations
+   - Full undo/redo support for create, delete, move, scale, and property changes
+
+### Previous Changes (October 27, 2025)
 
 ### Bug Fixes and Enhancements
 1. **Splash Screen Implementation**: Added a personalized splash screen that displays before the main application with proper lifecycle management (DISPOSE_ON_CLOSE) to prevent JVM termination when transitioning to the main DrawingFrame.
