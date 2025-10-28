@@ -18,6 +18,7 @@ public abstract class Shape {
     private Color color = Color.RED;
     private Color fill;
     private int thickness;
+    private float opacity = 1.0f;
     String text;
     Font font;
 

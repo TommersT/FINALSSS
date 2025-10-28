@@ -4,6 +4,7 @@ import com.gabriel.draw.view.DrawingView;
 import com.gabriel.drawfx.DrawMode;
 import com.gabriel.drawfx.SelectionMode;
 import com.gabriel.drawfx.ShapeMode;
+import com.gabriel.drawfx.ToolMode;
 import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.*;
@@ -16,6 +17,7 @@ import java.awt.*;
 public class DrawingAppService implements AppService {
 
     final private Drawing drawing;;
+    private ToolMode toolMode = ToolMode.SELECT;
 
     @Setter
     DrawingView drawingView;
@@ -61,6 +63,16 @@ public class DrawingAppService implements AppService {
     @Override
     public void setShapeMode(ShapeMode shapeMode) {
         drawing.setShapeMode(shapeMode);
+    }
+
+    @Override
+    public ToolMode getToolMode() {
+        return toolMode;
+    }
+
+    @Override
+    public void setToolMode(ToolMode toolMode) {
+        this.toolMode = toolMode;
     }
 
     @Override

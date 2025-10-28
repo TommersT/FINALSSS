@@ -6,11 +6,17 @@ import com.gabriel.drawfx.ActionCommand;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DrawingToolBar extends JToolBar {
 
     protected JTextArea textArea;
     ActionListener actionListener;
+    private Map<String, JButton> toolButtons = new HashMap<>();
+    private JButton currentActiveButton = null;
+    private JButton undoButton;
+    private JButton redoButton;
 
     public DrawingToolBar(ActionListener actionListener){
         setFloatable(false);
@@ -23,30 +29,39 @@ public class DrawingToolBar extends JToolBar {
     }
 
     protected void addButtons() {
-        add(makeToolButton("undo", ActionCommand.UNDO, "Undo (Ctrl+Z)"));
-        add(makeToolButton("redo", ActionCommand.REDO, "Redo (Ctrl+Y)"));
-        
+        undoButton = makeToolButton("undo", ActionCommand.UNDO, "Undo (Ctrl+Z)");
+        redoButton = makeToolButton("redo", ActionCommand.REDO, "Redo (Ctrl+Y)");
+        add(undoButton);
+        add(redoButton);
+
         addSeparator(new Dimension(10, 30));
-        
-        add(makeToolButton("select", ActionCommand.SELECT, "Select"));
-        add(makeToolButton("move", ActionCommand.MOVE, "Move"));
-        add(makeToolButton("scale", ActionCommand.SCALE, "Scale/Resize"));
-        
+
+        add(makeToolButton("select", ActionCommand.SELECT, "Select", true));
+        add(makeToolButton("move", ActionCommand.MOVE, "Move", true));
+        add(makeToolButton("scale", ActionCommand.SCALE, "Scale/Resize", true));
+
         addSeparator(new Dimension(10, 30));
-        
-        add(makeToolButton("line", ActionCommand.LINE, "Line"));
-        add(makeToolButton("rect", ActionCommand.RECT, "Rectangle"));
-        add(makeToolButton("ellipse", ActionCommand.ELLIPSE, "Ellipse"));
-        add(makeToolButton("text", ActionCommand.TEXT, "Text"));
-        add(makeToolButton("image", ActionCommand.IMAGE, "Image"));
-        
+
+        add(makeToolButton("line", ActionCommand.LINE, "Line", true));
+        add(makeToolButton("rect", ActionCommand.RECT, "Rectangle", true));
+        add(makeToolButton("ellipse", ActionCommand.ELLIPSE, "Ellipse", true));
+        add(makeToolButton("text", ActionCommand.TEXT, "Text", true));
+        add(makeToolButton("image", ActionCommand.IMAGE, "Image", true));
+
         addSeparator(new Dimension(10, 30));
-        
+
         add(makeToolButton("color", ActionCommand.COLOR, "Fore Color"));
         add(makeToolButton("fill", ActionCommand.FILL, "Fill Color"));
+
+        undoButton.setEnabled(false);
+        redoButton.setEnabled(false);
     }
 
     protected JButton makeToolButton(String iconType, String actionCommand, String toolTipText) {
+        return makeToolButton(iconType, actionCommand, toolTipText, false);
+    }
+
+    protected JButton makeToolButton(String iconType, String actionCommand, String toolTipText, boolean isToggleable) {
         JButton button = new JButton();
         button.setIcon(ModernIconFactory.createIcon(iconType));
         button.setActionCommand(actionCommand);
@@ -57,19 +72,48 @@ public class DrawingToolBar extends JToolBar {
         button.setContentAreaFilled(false);
         button.setPreferredSize(new Dimension(32, 32));
         button.setMargin(new Insets(4, 4, 4, 4));
-        
+
+        if (isToggleable) {
+            toolButtons.put(actionCommand, button);
+        }
+
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBorderPainted(true);
-                button.setContentAreaFilled(true);
-                button.setBackground(new Color(220, 220, 220));
+                if (!button.equals(currentActiveButton)) {
+                    button.setBorderPainted(true);
+                    button.setContentAreaFilled(true);
+                    button.setBackground(new Color(220, 220, 220));
+                }
             }
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBorderPainted(false);
-                button.setContentAreaFilled(false);
+                if (!button.equals(currentActiveButton)) {
+                    button.setBorderPainted(false);
+                    button.setContentAreaFilled(false);
+                }
             }
         });
-        
+
         return button;
+    }
+
+    public void setActiveTool(String actionCommand) {
+        if (currentActiveButton != null) {
+            currentActiveButton.setBorderPainted(false);
+            currentActiveButton.setContentAreaFilled(false);
+            currentActiveButton.setBackground(null);
+        }
+
+        JButton newActiveButton = toolButtons.get(actionCommand);
+        if (newActiveButton != null) {
+            currentActiveButton = newActiveButton;
+            currentActiveButton.setBorderPainted(true);
+            currentActiveButton.setContentAreaFilled(true);
+            currentActiveButton.setBackground(new Color(180, 200, 220));
+        }
+    }
+
+    public void updateUndoRedoState(boolean canUndo, boolean canRedo) {
+        undoButton.setEnabled(canUndo);
+        redoButton.setEnabled(canRedo);
     }
 }

@@ -1,0 +1,267 @@
+Please refactor and enhance the entire application to deliver a modern, stable, responsive, and fully functional drawing program.
+
+🎨 1. Toolbar Redesign and Tool Behavior
+
+Current Issues:
+
+Image-based buttons, inconsistent layout.
+
+Missing Move and Scale tools.
+
+No visual feedback when a tool is active.
+
+Line tool behaves incorrectly.
+
+Improvements:
+
+Replace all toolbar images with modern vector-style icons (e.g., Material or FlatLaf icons).
+
+Add hover tooltips for every tool.
+
+Highlight the active tool visually (toggle state or background).
+
+Add Move and Scale tools beside the Select tool:
+
+Move Tool: Allows repositioning shapes only.
+
+Scale Tool: Allows resizing/scaling shapes only.
+
+Ensure tools cannot conflict (e.g., move active disables scaling behavior).
+
+Fix the Line Tool bug — lines should draw correctly without offset or flickering.
+
+Group similar tools visually with separators (Select | Draw | Edit | Text).
+
+Use flat, modern toolbar design with uniform icon sizes.
+
+🖼️ 2. Canvas and Shape Functionality
+
+Current Issues:
+
+Dragging shapes causes delay and flicker.
+
+Resizing/moving not smooth.
+
+Multi-selection and movement unsupported.
+
+Improvements:
+
+Implement double-buffering to eliminate flicker and lag.
+
+Fix mouse lag — optimize repaint to only redraw affected areas (repaint(Rectangle bounds)).
+
+Allow multi-selection (Ctrl + Click):
+
+Selected shapes should move together when using Move tool.
+
+Support real-time movement/resizing preview.
+
+Add rotation handle (optional enhancement).
+
+Ensure handles are rendered consistently for all shape types (rect, ellipse, line, text).
+
+Pressing Shift while resizing maintains aspect ratio.
+
+Improve hit detection for thin lines or small shapes.
+
+Update X/Y location and Width/Height in property table in real-time as the user drags or resizes a shape.
+
+🧾 3. Property Table (Property Sheet)
+
+Current Issues:
+
+Inconsistent updates.
+
+Fill and Fore color pickers buggy.
+
+Editing text or numeric values sometimes fails.
+
+Not in sync with real-time movement.
+
+Improvements:
+
+Implement two-way synchronization:
+
+Editing in table instantly updates shape on canvas.
+
+Moving/resizing shape instantly updates table values.
+
+Fix Fore Color and Fill Color:
+
+Use JColorChooser safely (no null-pointer or thread exceptions).
+
+Update shape color instantly after choosing.
+
+Make typing in table cells consistent (e.g., typing new X updates shape immediately).
+
+Ensure property table updates live during drag/move actions.
+
+Support common properties for multi-selected shapes (e.g., changing fill color applies to all).
+
+Add thickness and opacity (alpha) fields, and ensure they reflect correctly on canvas.
+
+Add text editing directly through the property table when a text shape is selected.
+
+🔤 4. Text Tool and Editing
+
+Current Issues:
+
+Text input dialog missing or buggy.
+
+Cannot edit text after adding.
+
+No control over font family, style, or size.
+
+Improvements:
+
+When using Text Tool and clicking on canvas:
+
+Show a Text Dialog with:
+
+Text input area
+
+Font family dropdown
+
+Font style (Plain/Bold/Italic)
+
+Font size spinner
+
+Fore color chooser
+
+Display live preview inside dialog.
+
+After placing text:
+
+Allow double-click to reopen text editor dialog.
+
+Allow text changes in property table.
+
+Ensure text movement and scaling behave like shapes.
+
+Enable anti-aliased text rendering for smoother visuals.
+
+🔁 5. Undo/Redo System (High Priority)
+
+Current Issues:
+
+Not all actions tracked.
+
+Buttons remain active when no actions exist.
+
+Movement or resize actions not undoable.
+
+Improvements:
+
+Implement a full UndoManager or Command Pattern system:
+
+Track all actions:
+
+Shape creation and deletion
+
+Move, resize, scale
+
+Fore/Fill color changes
+
+Line thickness changes
+
+Text edits and font changes
+
+All property modifications
+
+Support grouped undo (e.g., continuous drag = one undo entry).
+
+Disable Undo/Redo buttons when no actions exist.
+
+Add tooltips showing recent actions (e.g., “Undo Move Ellipse”, “Redo Color Change”).
+
+Ensure Undo/Redo updates both:
+
+Canvas state
+
+Property table
+
+Handle undo/redo for multi-selection operations.
+
+Ensure stability — no crashes during consecutive Undo/Redo.
+
+💾 6. Open, Save, and Save As Functionality
+
+Current Issues:
+
+Shape colors and text properties not fully saved or reloaded.
+
+Open sometimes fails to load correctly.
+
+Improvements:
+
+Fix Open, Save, and Save As:
+
+Ensure every shape’s full data is preserved:
+
+Shape type
+
+X, Y, Width, Height
+
+Foreground and fill colors
+
+Line thickness
+
+Opacity
+
+Text content, font, size, and style
+
+Preserve layer order and z-index.
+
+Use JSON for file format (recommended for readability).
+
+Validate files on load; handle malformed files safely.
+
+After loading, refresh:
+
+Canvas view
+
+Property table
+
+Undo/Redo history cleared
+
+Add a confirmation dialog for unsaved changes.
+
+📊 7. Status Bar
+
+Add a modern status bar showing:
+
+Current tool
+
+Mouse X/Y coordinates (real-time)
+
+Selected shape name/type
+
+Count of selected shapes
+
+Example:
+
+[Tool: Move] | [X: 130, Y: 112] | [Shape: Ellipse] | [Selected: 2]
+
+⚙️ 8. Architecture and Code Structure
+
+Refactor to MVC pattern:
+
+Model: Shape data and state
+
+View: Canvas, property table, toolbar, status bar
+
+Controller: Tool and event handling logic
+
+Define a Shape interface with subclasses:
+
+LineShape, EllipseShape, RectangleShape, TextShape
+
+Implement a ShapeFactory for creation logic.
+
+Centralize mouse handling (press, drag, release) under one controller.
+
+Use optimized repainting (update only affected areas).
+
+Add logging for debugging shape actions and Undo/Redo history.
+
+Ensure exception-safe event handling.

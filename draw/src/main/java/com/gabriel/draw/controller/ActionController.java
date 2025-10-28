@@ -1,8 +1,10 @@
 package com.gabriel.draw.controller;
 import com.gabriel.draw.service.ImageFileService;
 import com.gabriel.draw.service.XmlDocumentService;
+import com.gabriel.draw.view.DrawingToolBar;
 import com.gabriel.drawfx.ActionCommand;
 import com.gabriel.drawfx.ShapeMode;
+import com.gabriel.drawfx.ToolMode;
 import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.AppService;
@@ -26,6 +28,12 @@ public class ActionController implements ActionListener {
     @Setter
     Component component;
 
+    @Setter
+    DrawingToolBar toolBar;
+
+    @Setter
+    DrawingController drawingController;
+
     Drawing drawing;
     @Setter
     JFrame frame;
@@ -40,6 +48,14 @@ public class ActionController implements ActionListener {
         this.frame = frame;
     }
 
+    public void setToolBar(DrawingToolBar toolBar) {
+        this.toolBar = toolBar;
+    }
+
+    public void setDrawingController(DrawingController drawingController) {
+        this.drawingController = drawingController;
+    }
+
     public  ActionController(AppService appService){
         this.appService = appService;
         drawing = appService.getDrawing();
@@ -51,20 +67,31 @@ public class ActionController implements ActionListener {
         String cmd = e.getActionCommand();
         if (ActionCommand.UNDO.equals(cmd)) {
             appService.undo();
-        }
-        if (ActionCommand.REDO.equals(cmd)) {
+        } else if (ActionCommand.REDO.equals(cmd)) {
             appService.redo();
         } else if (ActionCommand.LINE.equals(cmd)) {
             appService.setShapeMode(ShapeMode.Line);
+            appService.setToolMode(ToolMode.DRAW);
+            if (toolBar != null) toolBar.setActiveTool(cmd);
+            if (drawingController != null) drawingController.updateStatusBarTool("Line");
         } else if (ActionCommand.RECT.equals(cmd)) {
             appService.setShapeMode(ShapeMode.Rectangle);
+            appService.setToolMode(ToolMode.DRAW);
+            if (toolBar != null) toolBar.setActiveTool(cmd);
+            if (drawingController != null) drawingController.updateStatusBarTool("Rectangle");
         } else if (ActionCommand.ELLIPSE.equals(cmd)) {
             appService.setShapeMode(ShapeMode.Ellipse);
-        } else if (ActionCommand.IMAGE.equals(cmd)) { // third button
+            appService.setToolMode(ToolMode.DRAW);
+            if (toolBar != null) toolBar.setActiveTool(cmd);
+            if (drawingController != null) drawingController.updateStatusBarTool("Ellipse");
+        } else if (ActionCommand.IMAGE.equals(cmd)) {
             if(drawing.getImageFilename() == null) {
                 imageFileService.setImage(drawing);
             }
             appService.setShapeMode(ShapeMode.Image);
+            appService.setToolMode(ToolMode.DRAW);
+            if (toolBar != null) toolBar.setActiveTool(cmd);
+            if (drawingController != null) drawingController.updateStatusBarTool("Image");
         } else if (ActionCommand.COLOR.equals(cmd)) {
             Color currentColor = appService.getColor();
             if (currentColor == null) currentColor = Color.BLACK;
@@ -73,9 +100,10 @@ public class ActionController implements ActionListener {
                 appService.setColor(color);
             }
         } else if (ActionCommand.TEXT.equals(cmd)) {
-            // NOTE: fontchooser module missing - using default font for now
-            // Users can still add text with the current font
             appService.setShapeMode(ShapeMode.Text);
+            appService.setToolMode(ToolMode.DRAW);
+            if (toolBar != null) toolBar.setActiveTool(cmd);
+            if (drawingController != null) drawingController.updateStatusBarTool("Text");
         } else if (ActionCommand.FILL.equals(cmd)) {
             Color currentFill = appService.getFill();
             if (currentFill == null) currentFill = Color.WHITE;
@@ -93,10 +121,19 @@ public class ActionController implements ActionListener {
         } else if (ActionCommand.SELECT.equals(cmd)) {
             appService.clearSelections();
             appService.setShapeMode(ShapeMode.Select);
+            appService.setToolMode(ToolMode.SELECT);
+            if (toolBar != null) toolBar.setActiveTool(cmd);
+            if (drawingController != null) drawingController.updateStatusBarTool("Select");
         } else if (ActionCommand.MOVE.equals(cmd)) {
             appService.setShapeMode(ShapeMode.Select);
+            appService.setToolMode(ToolMode.MOVE);
+            if (toolBar != null) toolBar.setActiveTool(cmd);
+            if (drawingController != null) drawingController.updateStatusBarTool("Move");
         } else if (ActionCommand.SCALE.equals(cmd)) {
             appService.setShapeMode(ShapeMode.Select);
+            appService.setToolMode(ToolMode.SCALE);
+            if (toolBar != null) toolBar.setActiveTool(cmd);
+            if (drawingController != null) drawingController.updateStatusBarTool("Scale");
         } else if (ActionCommand.SAVE.equals(cmd)) {
             String filename = drawing.getFilename();
             if (filename == null) {

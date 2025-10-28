@@ -35,6 +35,11 @@ public class TextRenderer extends ShapeRenderer {
 
         int width = shape.getWidth();
         int height = shape.getHeight();
+        
+        Composite oldComposite = g2.getComposite();
+        if (!xor && shape.getOpacity() < 1.0f) {
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, shape.getOpacity()));
+        }
 
         if (xor) {
             g2.setXORMode(shape.getColor());
@@ -46,6 +51,10 @@ public class TextRenderer extends ShapeRenderer {
             }
             g2.setColor(shape.getColor());
             g2.drawString(textContent, x + 5, y);
+        }
+        
+        if (!xor) {
+            g2.setComposite(oldComposite);
         }
         
         int ascent = fm.getAscent();

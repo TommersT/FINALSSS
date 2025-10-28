@@ -15,15 +15,13 @@ public class RectangleRenderer extends ShapeRenderer {
         int width = shape.getWidth() ;
         int height = shape.getHeight();
 
-        if(xor) {
-            g.setXORMode(shape.getColor());
-        }
-        else {
-            g.setColor(shape.getColor());
-        }
-
         Graphics2D g2 = (Graphics2D) g;
         g2.setStroke(new BasicStroke(shape.getThickness()));
+        
+        Composite oldComposite = g2.getComposite();
+        if (!xor && shape.getOpacity() < 1.0f) {
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, shape.getOpacity()));
+        }
 
         if (xor) {
             g2.setXORMode(shape.getColor());
@@ -35,6 +33,11 @@ public class RectangleRenderer extends ShapeRenderer {
             g2.setColor(shape.getColor());
         }
         g2.drawRect(x, y, width, height);
+        
+        if (!xor) {
+            g2.setComposite(oldComposite);
+        }
+        
         super.render(g, shape, xor);
 
     }

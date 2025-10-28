@@ -6,6 +6,7 @@ import com.gabriel.draw.model.Rectangle;
 import com.gabriel.draw.view.DrawingStatusPanel;
 import com.gabriel.draw.view.TextInputDialog;
 import com.gabriel.drawfx.DrawMode;
+import com.gabriel.drawfx.ToolMode;
 import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.util.Normalizer;
 import com.gabriel.drawfx.SelectionMode;
@@ -196,52 +197,64 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
         if(appService.getDrawMode() == DrawMode.MousePressed) {
             end = e.getPoint();
             if(drawing.getShapeMode() == ShapeMode.Select){
+                ToolMode toolMode = appService.getToolMode();
                 Shape selectedShape = drawing.getSelectedShape();
                 if(selectedShape != null){
                     java.awt.Rectangle oldBounds = null;
                     java.awt.Rectangle newBounds = null;
-                    
-                    if(selectedShape.getSelectionMode() == SelectionMode.None){
+
+                    if(toolMode == ToolMode.MOVE || (toolMode == ToolMode.SELECT && selectedShape.getSelectionMode() == SelectionMode.None)){
                         List<Shape> shapes = drawing.getShapes();
                         for(Shape shape : shapes) {
                             if (shape.isSelected()) {
                                 Point loc = shape.getLocation();
                                 int margin = 20;
                                 if(oldBounds == null) {
-                                    oldBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                                    oldBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
                                         shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin);
                                 } else {
-                                    oldBounds.add(new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                                    oldBounds.add(new java.awt.Rectangle(loc.x - margin, loc.y - margin,
                                         shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin));
                                 }
                                 appService.move(shape, start, end);
                                 loc = shape.getLocation();
                                 if(newBounds == null) {
-                                    newBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                                    newBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
                                         shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin);
                                 } else {
-                                    newBounds.add(new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                                    newBounds.add(new java.awt.Rectangle(loc.x - margin, loc.y - margin,
                                         shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin));
                                 }
                             }
                         }
                     }
-                    else {
+                    else if(toolMode == ToolMode.SCALE || (toolMode == ToolMode.SELECT && selectedShape.getSelectionMode() != SelectionMode.None)) {
                         Point loc = selectedShape.getLocation();
                         int margin = 20;
-                        oldBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                        oldBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
                             selectedShape.getWidth() + 2 * margin, selectedShape.getHeight() + 2 * margin);
-                        appService.scale(selectedShape, start, end);
+                        
+                        if (e.isShiftDown()) {
+                            Point adjustedEnd = maintainAspectRatio(selectedShape, start, end);
+                            appService.scale(selectedShape, start, adjustedEnd);
+                        } else {
+                            appService.scale(selectedShape, start, end);
+                        }
+                        
                         loc = selectedShape.getLocation();
-                        newBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                        newBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
                             selectedShape.getWidth() + 2 * margin, selectedShape.getHeight() + 2 * margin);
                     }
-                    
+
                     if(oldBounds != null) {
                         drawingView.repaint(oldBounds);
                     }
                     if(newBounds != null) {
                         drawingView.repaint(newBounds);
+                    }
+
+                    if(propertySheet != null) {
+                        propertySheet.populateTable(appService);
                     }
                 }
                 start = end;
@@ -251,11 +264,11 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                 if(currentShape != null) {
                     Point loc = currentShape.getLocation();
                     int margin = 20;
-                    java.awt.Rectangle oldBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                    java.awt.Rectangle oldBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
                         currentShape.getWidth() + 2 * margin, currentShape.getHeight() + 2 * margin);
                     appService.scale(currentShape, end);
                     loc = currentShape.getLocation();
-                    java.awt.Rectangle newBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                    java.awt.Rectangle newBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
                         currentShape.getWidth() + 2 * margin, currentShape.getHeight() + 2 * margin);
                     drawingView.repaint(oldBounds);
                     drawingView.repaint(newBounds);
@@ -273,10 +286,15 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
     
     private void updateStatusBarShape() {
         if (drawingStatusPanel != null) {
-            Shape selectedShape = drawing.getSelectedShape();
-            if (selectedShape != null) {
-                String shapeName = selectedShape.getClass().getSimpleName();
-                drawingStatusPanel.setShapeName(shapeName);
+            List<Shape> selectedShapes = appService.getSelectedShapes();
+            int count = selectedShapes.size();
+            if (count > 0) {
+                if (count == 1) {
+                    String shapeName = selectedShapes.get(0).getClass().getSimpleName();
+                    drawingStatusPanel.setShapeName(shapeName);
+                } else {
+                    drawingStatusPanel.setShapeInfo(count + " shapes selected");
+                }
             } else {
                 drawingStatusPanel.setShapeName(null);
             }
@@ -287,6 +305,37 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
         if (drawingStatusPanel != null) {
             drawingStatusPanel.setToolText(toolName);
         }
+    }
+    
+    private Point maintainAspectRatio(Shape shape, Point start, Point end) {
+        int originalWidth = shape.getWidth();
+        int originalHeight = shape.getHeight();
+        
+        if (originalWidth == 0 || originalHeight == 0) {
+            return end;
+        }
+        
+        double aspectRatio = (double) originalWidth / originalHeight;
+        
+        int dx = end.x - start.x;
+        int dy = end.y - start.y;
+        
+        int signX = dx >= 0 ? 1 : -1;
+        int signY = dy >= 0 ? 1 : -1;
+        
+        int absDx = Math.abs(dx);
+        int absDy = Math.abs(dy);
+        
+        if (absDx > absDy) {
+            absDy = (int) (absDx / aspectRatio);
+        } else {
+            absDx = (int) (absDy * aspectRatio);
+        }
+        
+        dx = absDx * signX;
+        dy = absDy * signY;
+        
+        return new Point(start.x + dx, start.y + dy);
     }
 
     @Override
