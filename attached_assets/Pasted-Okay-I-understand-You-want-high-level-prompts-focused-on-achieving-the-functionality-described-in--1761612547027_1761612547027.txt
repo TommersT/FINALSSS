@@ -1,0 +1,63 @@
+Okay, I understand. You want high-level prompts focused on achieving the functionality described in your rubric, guiding you on *what* to fix or implement rather than giving you the exact code. Let's break it down based on your rubric and the errors we discussed:
+
+**1. Personalized Splash Screen (10%)**
+
+  * **Requirement:** Your picture (`tomtaruc.jpg`), a button (`GoDraw.png`), launches the main app (`DrawingFrame`).
+  * **Current Status:** Your `Splash.java` and `Main.java` already achieve this basic functionality.
+  * **Prompts to Ensure Functionality & Meet Rubric:**
+      * **Verify Resource Loading:** Double-check that `Splash.java` and `GPanel.java` are correctly loading `tomtaruc.jpg` and `GoDraw.png` using resource streams (`getClass().getResourceAsStream(...)`) to ensure they work even when packaged.
+      * **Confirm Window Closing:** Ensure that when the "Go Draw" button is clicked in `Splash.java`, the `SplashFrame` is properly disposed of (`topFrame.dispose();`) *after* the `DrawingFrame` is made visible, so only the main application remains open.
+      * **(Enhancement):** Review the layout and appearance in `Splash.java` to make sure the image and button look presentable. Consider centering the button or adjusting its position for better visual appeal.
+
+**2. Property Sheet Implementation (40%)**
+
+  * **Requirement:** Bidirectionally link the Property Sheet to the selected shape(s). Show required properties (Width, Height, Thickness, Fill Color, Current Shape, X/Y Location, Text properties). Null/empty when nothing selected.
+  * **Current Status:** `PropertySheet.java` exists and attempts to populate based on selection. `PropertyEventListener.java` handles updates *from* the sheet. `DrawingController` calls `populateTable` to update the sheet *after* canvas actions. Selection bugs are the main blocker.
+  * **Prompts to Ensure Functionality & Meet Rubric:**
+      * **PRIORITY - Fix Selection Bugs:** Implement the prompts from our previous discussion regarding `SearchService.java` (correct hit-detection, single vs. multi-select logic) and `DrawingController.java` (don't auto-select new shapes). **The Property Sheet cannot function correctly until selection is reliable.**
+      * **Ensure `populateTable` Completeness:** Review the `populateTable` method in `PropertySheet.java`. Verify that *all* required properties (Width, Height, Thickness, Fill Color, X, Y, Text, Font properties) are added to the table both when a shape *is* selected and when *no shape* is selected (showing global/default properties like "Current Shape" tool).
+      * **Verify `PropertyEventListener` Coverage:** Review `PropertyEventListener.java`. Ensure there is an `if/else if` block for *every single property* that can be edited in the sheet (Color, Fill, X, Y, Width, Height, Thickness, Text, Font Size/Style/Family, Current Shape Tool). Each block must correctly create and execute the corresponding `Command` object (e.g., `SetWidthCommand`, `SetColorCommand`).
+      * **Trigger Sheet Updates:** Confirm that `drawingController.setPropertySheet(propertySheet)` is called correctly in `DrawingFrame`. Ensure that `propertySheet.populateTable(appService)` is called within `DrawingController` at appropriate times:
+          * After a shape is selected or deselected (`mousePressed`, `mouseReleased` when in Select mode).
+          * After a property is changed directly on the canvas (e.g., after `mouseReleased` during a move or scale operation).
+          * After Undo/Redo actions that might change selection or properties.
+
+**3. Undo/Redo Implementation (40%)**
+
+  * **Requirement:** Undo/redo for create, delete, and *all* shape property changes (including those from the property sheet).
+  * **Current Status:** `CommandService` and individual command classes exist. `PropertyEventListener` correctly wraps sheet changes in commands. `DrawingController` wraps create/move/scale. `ActionController` wraps delete.
+  * **Prompts to Ensure Functionality & Meet Rubric:**
+      * **Verify Listener Command Wrapping:** Re-confirm (as part of the Property Sheet verification) that `PropertyEventListener` wraps *every* property change initiated from the sheet into a specific `Command` and executes it via `CommandService.ExecuteCommand()`.
+      * **Verify Controller Command Wrapping:** Confirm that `DrawingController` uses commands for actions initiated on the canvas:
+          * `AddShapeCommand` in `mouseReleased` when creating.
+          * `MoveCommand` should be used *within* `mouseDragged` or finalized in `mouseReleased` for move operations (capturing initial state in `mousePressed`). Currently, it seems `MoveCommand` might only be created in `DrawingCommandAppService`, ensure it captures the correct state before the drag starts.
+          * `ScaleCommand` should be used similarly for scaling operations.
+      * **Verify `ActionController` Commands:** Confirm `ActionController` uses `DeleteShapeCommand` for the delete action and potentially commands for layer changes if implemented.
+      * **Test Thoroughly:** After fixing selection and ensuring commands are used everywhere, rigorously test undo/redo for *every* action: create shape, delete shape, move shape, scale shape, change color (sheet), change fill (sheet), change thickness (sheet), change text (sheet), change font properties (sheet), change position/size (sheet). Test sequences of actions and undo/redo steps.
+
+**4. Enhancements (10%)**
+
+  * **Requirement:** Improve look, feel, experience.
+  * **Current Status:** Standard basic Swing UI. Performance issues due to full repaints.
+  * **Prompts to Ensure Functionality & Meet Rubric:**
+      * **Improve Performance (High Impact):** Implement the "Dirty Rectangle" repainting prompt from our previous discussion in `DrawingController.mouseDragged`. This is the single biggest "feel" improvement you can make.
+      * **Modern Look and Feel:** Add code (early in your `Main.java` or `DrawingFrame` constructor, *before* creating UI components) to set a more modern LookAndFeel, such as Nimbus or system default:
+        ```java
+        try {
+            // Option 1: Nimbus Look and Feel
+            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+            // Option 2: System Look and Feel (Windows/Mac/Linux native style)
+            // UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); 
+        } catch (Exception e) {
+            // Handle exception, maybe default to Metal
+            e.printStackTrace();
+        }
+        ```
+      * **UI Polish:** Review layouts in `DrawingFrame`, `DrawingToolBar`, `DrawingStatusPanel`. Ensure consistent spacing, alignment, and sizing of components. Use layout managers effectively (BorderLayout, BoxLayout, FlowLayout, GridBagLayout) instead of absolute positioning (`setLayout(null)`) where possible, especially outside the main drawing canvas itself. Replace text labels on buttons with icons where appropriate (you already do this well in the toolbar).
+
+By focusing on these prompts, especially fixing the core selection bugs first, you should be able to meet the rubric requirements and significantly improve your application. Good luck\!

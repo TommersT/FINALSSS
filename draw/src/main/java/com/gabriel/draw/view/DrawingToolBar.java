@@ -35,7 +35,7 @@ public class DrawingToolBar extends JToolBar {
         
         addSeparator();
         
-        button = makeNavigationButton("select", ActionCommand.SELECT, "Select", "Select");
+        button = makeNavigationButton("select", ActionCommand.SELECT, "Select (for Move & Scale)", "Select");
         add(button);
         
         button = makeNavigationButton("rect", ActionCommand.RECT, "Rectangle", "Rectangle");
@@ -66,24 +66,22 @@ public class DrawingToolBar extends JToolBar {
             String actionCommand,
             String toolTipText,
             String altText) {
-        //Look for the image.
-        String imgLocation = "images/"
-                + imageName
-                + ".png";
+        String imgLocation = "images/" + imageName + ".png";
         URL imageURL = DrawingToolBar.class.getResource(imgLocation);
 
-        //Create and initialize the button.
         JButton button = new JButton();
         button.setActionCommand(actionCommand);
         button.setToolTipText(toolTipText);
         button.addActionListener(actionListener);
+        button.setFocusable(false);
+        button.setBorderPainted(true);
 
-        if (imageURL != null) {                      //image found
-            button.setIcon(new ImageIcon(imageURL, altText));
-        } else {                                     //no image found
+        if (imageURL != null) {
+            ImageIcon icon = new ImageIcon(imageURL, altText);
+            button.setIcon(icon);
+        } else {
             button.setText(altText);
-            System.err.println("Resource not found: "
-                    + imgLocation);
+            System.err.println("Resource not found: " + imgLocation);
         }
         return button;
     }

@@ -18,11 +18,17 @@ public final class SearchService {
         List<Shape> shapes = drawing.getShapes();
         int r = appService.getSearchRadius();
 
-        for (Shape shape : shapes) {
+        Shape foundShape = null;
+        
+        for (int i = shapes.size() - 1; i >= 0; i--) {
+            Shape shape = shapes.get(i);
             Point loc = shape.getLocation();
             int width = shape.getWidth();
             int height = shape.getHeight();
+            
             if (p.x > loc.x - r && p.x < loc.x + width + r && p.y > loc.y - r && p.y < loc.y + height + r) {
+                foundShape = shape;
+                
                 if (found(shape, p, loc.x, loc.y, r)) {
                     shape.setSelectionMode(SelectionMode.UpperLeft);
                 } else if (found(shape, p, loc.x, loc.y + height / 2, r)) {
@@ -42,15 +48,41 @@ public final class SearchService {
                 } else {
                     shape.setSelectionMode(SelectionMode.None);
                 }
-                shape.setSelected(true);
-                drawing.setSelectedShape( shape);
+                
+                break;
             }
-            else {
-                if (single) {
-                    if(shape.isSelected()) {
+        }
+        
+        if (foundShape != null) {
+            if (single) {
+                for (Shape shape : shapes) {
+                    if (shape != foundShape) {
                         shape.setSelected(false);
                     }
                 }
+                foundShape.setSelected(true);
+                drawing.setSelectedShape(foundShape);
+            } else {
+                foundShape.setSelected(!foundShape.isSelected());
+                if (foundShape.isSelected()) {
+                    drawing.setSelectedShape(foundShape);
+                } else {
+                    Shape newSelectedShape = null;
+                    for (Shape shape : shapes) {
+                        if (shape.isSelected()) {
+                            newSelectedShape = shape;
+                            break;
+                        }
+                    }
+                    drawing.setSelectedShape(newSelectedShape);
+                }
+            }
+        } else {
+            if (single) {
+                for (Shape shape : shapes) {
+                    shape.setSelected(false);
+                }
+                drawing.setSelectedShape(null);
             }
         }
     }

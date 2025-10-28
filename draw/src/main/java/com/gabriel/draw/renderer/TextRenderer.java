@@ -47,6 +47,10 @@ public class TextRenderer extends ShapeRenderer {
             g2.setColor(shape.getColor());
             g2.drawString(textContent, x + 5, y);
         }
+        
+        int ascent = fm.getAscent();
+        g2.translate(0, -ascent);
         super.render(g, shape, xor);
+        g2.translate(0, ascent);
     }
 }

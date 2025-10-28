@@ -1,4 +1,4 @@
-modules = ["java-graalvm22.3"]
+modules = ["java-graalvm22.3", "java-17"]
 [agent]
 expertMode = true
 
@@ -22,11 +22,11 @@ name = "GoDraw Application"
 author = "agent"
 
 [workflows.workflow.metadata]
-outputType = "vnc"
+outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "mvn clean install -DskipTests && mvn -pl draw exec:java -Dexec.mainClass=\"com.gabriel.draw.Main\""
+args = "cd draw && mvn exec:java -Dexec.mainClass=\"com.gabriel.draw.Main\""
 
 [[ports]]
 localPort = 45961

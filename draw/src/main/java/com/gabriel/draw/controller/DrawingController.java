@@ -161,8 +161,6 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                 currentShape.setFont(drawing.getFont());
                 Normalizer.normalize(currentShape);
                 appService.create(currentShape);
-                currentShape.setSelected(true);
-                drawing.setSelectedShape(currentShape);
             }
             appService.setDrawMode(DrawMode.Idle);
         }
@@ -189,27 +187,67 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
             if(drawing.getShapeMode() == ShapeMode.Select){
                 Shape selectedShape = drawing.getSelectedShape();
                 if(selectedShape != null){
-                    drawingView.repaint();
+                    java.awt.Rectangle oldBounds = null;
+                    java.awt.Rectangle newBounds = null;
+                    
                     if(selectedShape.getSelectionMode() == SelectionMode.None){
-                        List<Shape> shapes =drawing.getShapes();
+                        List<Shape> shapes = drawing.getShapes();
                         for(Shape shape : shapes) {
                             if (shape.isSelected()) {
+                                Point loc = shape.getLocation();
+                                int margin = 20;
+                                if(oldBounds == null) {
+                                    oldBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                                        shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin);
+                                } else {
+                                    oldBounds.add(new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                                        shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin));
+                                }
                                 appService.move(shape, start, end);
+                                loc = shape.getLocation();
+                                if(newBounds == null) {
+                                    newBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                                        shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin);
+                                } else {
+                                    newBounds.add(new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                                        shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin));
+                                }
                             }
                         }
                     }
                     else {
+                        Point loc = selectedShape.getLocation();
+                        int margin = 20;
+                        oldBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                            selectedShape.getWidth() + 2 * margin, selectedShape.getHeight() + 2 * margin);
                         appService.scale(selectedShape, start, end);
+                        loc = selectedShape.getLocation();
+                        newBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                            selectedShape.getWidth() + 2 * margin, selectedShape.getHeight() + 2 * margin);
                     }
-                    drawingView.repaint();
+                    
+                    if(oldBounds != null) {
+                        drawingView.repaint(oldBounds);
+                    }
+                    if(newBounds != null) {
+                        drawingView.repaint(newBounds);
+                    }
                 }
                 start = end;
 
             }
             else {
                 if(currentShape != null) {
+                    Point loc = currentShape.getLocation();
+                    int margin = 20;
+                    java.awt.Rectangle oldBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                        currentShape.getWidth() + 2 * margin, currentShape.getHeight() + 2 * margin);
                     appService.scale(currentShape, end);
-                    drawingView.repaint();
+                    loc = currentShape.getLocation();
+                    java.awt.Rectangle newBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin, 
+                        currentShape.getWidth() + 2 * margin, currentShape.getHeight() + 2 * margin);
+                    drawingView.repaint(oldBounds);
+                    drawingView.repaint(newBounds);
                 }
             }
         }
