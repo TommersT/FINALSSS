@@ -1,0 +1,261 @@
+Perfect — here’s the **fully combined master prompt**, merging everything from my first and second responses into one **complete, professional upgrade request** for your Java Swing drawing application (as shown in your screenshot).
+
+It includes both **UI/UX redesign** and **internal architectural + functional improvements**, designed to modernize your project, fix existing bugs, and improve maintainability and usability.
+
+---
+
+## 🧠 **Ultimate Prompt: Complete Refactor & Enhancement of the Java Swing Drawing Application**
+
+I have a Java Swing drawing application (like the one shown in the attached screenshot).
+It includes a toolbar, drawing canvas, and a property panel showing shape attributes.
+
+Please **refactor and improve** the application for a smoother user experience, better functionality, and modern UI design.
+Focus on **stability**, **real-time interactivity**, and **clean architecture**.
+
+---
+
+### 🎨 **1. Toolbar Redesign and Expansion**
+
+**Current issues:**
+
+* Toolbar uses images, not icons.
+* No consistent design, spacing, or hover tooltips.
+* Lacks move/scale tools and active state feedback.
+
+**Improvements:**
+
+1. Replace all toolbar images with **modern flat vector-style icons** (e.g., from Material Icons or Feather Icons).
+2. Keep all icons **same size and evenly spaced** (e.g., 20×20px).
+3. Add **hover tooltips** for each tool: Select, Move, Scale, Line, Rectangle, Ellipse, Text, etc.
+4. Visually **highlight the selected tool** (toggle state or background color).
+5. Add **Move** and **Scale** buttons beside the Select tool.
+6. Use **flat modern styling** (no 3D borders).
+7. Add **cursor icons** that reflect the current tool (crosshair for draw, hand for move).
+8. Organize tools into logical groups with separators (Drawing | Editing | View).
+
+---
+
+### 🖼️ **2. Canvas and Shape Editing Enhancements**
+
+**Current issues:**
+
+* Ellipse, Rectangle, and Line tools behave inconsistently and flicker during drawing.
+* Shape handles for resizing are misplaced or inconsistent.
+* Text handles appear incorrectly.
+
+**Improvements:**
+
+1. Implement **smooth real-time drawing previews** (temporary outline while dragging).
+2. Enable **double-buffering** to eliminate flickering.
+3. Ensure each shape supports:
+
+   * Moving
+   * Resizing (via corner handles)
+   * Proportional scaling with **Shift + drag**
+4. Update the property table **in real time** during movement or resizing.
+5. Use **consistent handle visuals** (small square nodes with cursor changes).
+6. Add **multi-select (Ctrl + click)** and **alignment options** (Align Left, Center, Right).
+7. Optional: **Snap to grid** or **Snap to other shapes**.
+8. Fix handle rendering for text objects.
+9. Add **rotation handles** (optional enhancement).
+
+---
+
+### 🧾 **3. Property Table Synchronization**
+
+**Current issues:**
+
+* Property table updates only after selection changes.
+* Fill color and Fore color pickers buggy.
+* Missing live sync.
+
+**Improvements:**
+
+1. Implement **bidirectional updates**:
+
+   * Changing properties updates shape immediately.
+   * Moving/resizing shape updates property table in real time.
+2. Fix **Fill Color** and **Fore Color** bugs — ensure `JColorChooser` opens safely and applies instantly.
+3. Add more editable properties:
+
+   * Opacity (alpha)
+   * Rotation angle
+   * Line style (solid, dashed)
+   * Layer order (bring forward/back)
+4. Support **keyboard navigation** and commit-on-enter editing in property cells.
+5. When multiple shapes are selected, show shared editable properties only.
+
+---
+
+### 🔤 **4. Text Tool Overhaul**
+
+**Current issues:**
+
+* Clicking to add text doesn’t open any input dialog.
+* Text editing buggy and doesn’t allow font customization.
+
+**Improvements:**
+
+1. On Text tool click:
+
+   * Show **Text Input Dialog** with:
+
+     * Text field
+     * Font family dropdown
+     * Font style (Plain/Bold/Italic)
+     * Font size spinner
+     * Fore color picker
+   * Preview text live before confirming.
+2. Support **multi-line text** and **real-time updates**.
+3. Allow **editing text on double-click** after placement.
+4. Fix **bounding box and handle positioning**.
+5. Enable **anti-aliasing** for smoother font rendering.
+
+---
+
+### 🔁 **5. Undo/Redo System Improvement**
+
+**Current issues:**
+
+* Not all actions are undoable/redoable.
+* Buttons don’t disable when stacks are empty.
+
+**Improvements:**
+
+1. Implement **UndoManager** or **Command Pattern** for:
+
+   * Creating/deleting shapes
+   * Moving/resizing shapes
+   * Color, thickness, text, and font edits
+   * All property changes
+2. Ensure Undo/Redo works for every user interaction in sequence.
+3. **Disable Undo/Redo buttons** when no actions exist.
+4. Add descriptive tooltips (“Undo Move Ellipse”, “Redo Color Change”).
+5. Support **grouped undo** (e.g., one continuous drag = one undo step).
+
+---
+
+### 💾 **6. Save and Load Functionality**
+
+**Current issues:**
+
+* Shape colors and properties don’t save/load properly.
+
+**Improvements:**
+
+1. Use **JSON format** for structured and easy-to-debug storage.
+2. Include all properties in saved data:
+
+   * Type, coordinates, dimensions
+   * Colors (fill/fore), opacity, thickness
+   * Font info for text
+   * Layer order
+3. Ensure **loaded files restore the scene perfectly**.
+4. Add **Save As**, **Open Recent**, and **error handling dialogs**.
+5. Preview file info before opening (optional).
+
+---
+
+### 📊 **7. Status Bar**
+
+**Add a modern status bar** at the bottom showing:
+
+* Current tool
+* Mouse X/Y coordinates
+* Selected shape name/type
+* Zoom level (optional)
+
+**Example:**
+
+```
+[Tool: Ellipse] | [X: 132, Y: 107] | [Shape: Ellipse] | [Zoom: 100%]
+```
+
+---
+
+### ⚙️ **8. Architecture and Code Structure**
+
+**Improvements:**
+
+1. Refactor into **MVC (Model-View-Controller)** pattern:
+
+   * **Model:** Shape data (position, color, etc.)
+   * **View:** Canvas drawing and property table
+   * **Controller:** Tool interactions and event logic
+2. Use a **Shape interface** and concrete implementations:
+
+   * `LineShape`, `RectangleShape`, `EllipseShape`, `TextShape`
+3. Centralize **event handling** (mouse, keyboard) in a unified controller.
+4. Optimize repainting using `repaint(Rectangle area)` to redraw only affected zones.
+5. Add **shape factory** for consistent creation logic.
+6. Handle errors gracefully — no unhandled exceptions in UI events.
+7. Improve **hit detection** for lines and text (use proximity tolerance).
+8. Implement **logging** for debugging (shape creation, edits, undo, etc.).
+
+---
+
+### 🌈 **9. UI and Visual Enhancements**
+
+1. Use a **neutral modern color theme** — gray toolbar, white canvas, soft accent borders.
+2. Add **tooltips** and **hover feedback** for all buttons.
+3. Add **keyboard shortcuts**:
+
+   * Ctrl+Z / Ctrl+Y → Undo / Redo
+   * Ctrl+S → Save
+   * Ctrl+O → Open
+   * Delete → Delete shape
+4. Add **dark mode toggle** (optional).
+5. Improve **layout margins and spacing** for clean look.
+6. Add **animated hover effects** on toolbar buttons.
+
+---
+
+### 🧩 **10. Optional Advanced Features**
+
+* Zoom in/out (Ctrl + mouse wheel)
+* Pan with spacebar + drag
+* Shape grouping/ungrouping
+* Context menu (right-click → Delete, Duplicate, Bring to Front)
+* Layer panel (optional)
+* Ruler & snapping guides
+* Auto-save and file recovery
+
+---
+
+### 🧱 **11. Functional Implementation Requirements**
+
+* Implement the **property sheet** to show and edit selected shape properties.
+* Real-time update between **canvas and property table** in both directions.
+* Fix **Fill Color and Fore Color** bug completely.
+* Ensure **Undo/Redo** correctly handles all shape operations and property changes.
+* Lock **Undo/Redo buttons** when unavailable.
+* When saving, ensure all shapes, colors, text, and layers persist correctly when reloaded.
+
+---
+
+### 💡 **12. Additional Internal Enhancements**
+
+* Improve **performance** by batching paint events.
+* Add **shape z-order management** (Bring Forward, Send Backward).
+* Store and restore **canvas zoom level** and view position.
+* Centralize **UI strings** (for easy localization later).
+* Modularize color pickers and dialogs for reuse.
+
+---
+
+### ✅ **Summary Goal**
+
+Deliver a **modernized, fully functional, and bug-free** drawing app with:
+
+* Clean icon-based toolbar
+* Responsive and flicker-free canvas
+* Real-time property updates
+* Reliable Undo/Redo system
+* Polished text editing
+* Proper save/load behavior
+* Consistent and intuitive UI/UX
+* MVC-structured maintainable codebase
+
+---
+
+Would you like me to generate the **updated class structure (MVC layout + toolbar + property table + undo manager integration)** next — so you can start implementing these features cleanly?
