@@ -107,11 +107,15 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                     case Line:
                         currentShape = new Line(start);
                         currentShape.setColor(appService.getColor());
+                        currentShape.setThickness(appService.getThickness());
+                        currentShape.setFill(appService.getFill());
                         currentShape.getRendererService().render(drawingView.getGraphics(), currentShape, false);
                         break;
                     case Rectangle:
                         currentShape = new Rectangle(start);
                         currentShape.setColor(appService.getColor());
+                        currentShape.setThickness(appService.getThickness());
+                        currentShape.setFill(appService.getFill());
                         currentShape.getRendererService().render(drawingView.getGraphics(), currentShape, false);
                         break;
                     case Text:
@@ -126,6 +130,8 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                                 drawing.setFont(selectedFont);
                                 currentShape = new Text(start);
                                 currentShape.setColor(appService.getColor());
+                                currentShape.setThickness(appService.getThickness());
+                                currentShape.setFill(appService.getFill());
                                 currentShape.setText(textContent);
                                 currentShape.setFont(selectedFont);
                                 currentShape.getRendererService().render(drawingView.getGraphics(), currentShape, true);
@@ -140,12 +146,15 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                     case Ellipse:
                         currentShape = new Ellipse(start);
                         currentShape.setColor(appService.getColor());
+                        currentShape.setThickness(appService.getThickness());
+                        currentShape.setFill(appService.getFill());
                         currentShape.getRendererService().render(drawingView.getGraphics(), currentShape, false);
                         break;
                     case Image:
                         currentShape = new Picture(start, start, drawing.getImageFilename());
                         currentShape.setColor(appService.getColor());
                         currentShape.setThickness(appService.getThickness());
+                        currentShape.setFill(appService.getFill());
                 }
 
 /* if(currentShape!=null) {
