@@ -19,7 +19,22 @@ This is a multi-module Maven project with the following modules:
 
 ## Recent Changes (October 28, 2025)
 
-### Latest Update - UI/UX Modernization (October 28, 2025 - Evening)
+### Latest Update - Critical Bug Fixes (October 28, 2025 - Late Evening)
+
+1. **Fixed Command Pattern for Undo/Redo**:
+   - Implemented proper state caching mechanism in DrawingController
+   - Store original positions and sizes of all selected shapes on mousePressed
+   - Restore original state before creating move/scale commands in mouseReleased
+   - This ensures commands capture true original→final state transformations
+   - Undo/redo now works correctly for move and scale operations without duplicate transformations
+
+2. **Fixed Splash Screen Image Loading**:
+   - Removed corrupted PNG image files (1.png, 2.png)
+   - Simplified splash screen to use programmatically-generated graphics
+   - Eliminated IOException errors on startup
+   - Application now starts cleanly without error messages
+
+### Previous Update - UI/UX Modernization (October 28, 2025 - Evening)
 
 1. **Modern Vector-Based Toolbar Icons**: 
    - Replaced image-based toolbar buttons with programmatically-generated vector icons via ModernIconFactory

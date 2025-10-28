@@ -19,15 +19,8 @@ public class Splash extends JPanel implements MouseListener, MouseMotionListener
     private boolean buttonHover = false;
     
     public Splash() {
-        try {
-            imageLoader = new ImageLoader();
-            backgroundImage = imageLoader.loadImage("/1.png");
-            buttonImage = imageLoader.loadImage("/2.png");
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            backgroundImage = createFallbackBackground();
-            buttonImage = createFallbackButton();
-        }
+        backgroundImage = createFallbackBackground();
+        buttonImage = createFallbackButton();
         
         setLayout(null);
         setBackground(new Color(45, 55, 80));
