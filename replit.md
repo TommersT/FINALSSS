@@ -19,7 +19,43 @@ This is a multi-module Maven project with the following modules:
 
 ## Recent Changes (October 28, 2025)
 
-### Major Enhancements - UI/UX & Performance Improvements
+### Latest Update - UI/UX Modernization (October 28, 2025 - Evening)
+
+1. **Modern Vector-Based Toolbar Icons**: 
+   - Replaced image-based toolbar buttons with programmatically-generated vector icons via ModernIconFactory
+   - Added Move and Scale tools as separate toolbar buttons for better discoverability
+   - Implemented modern icon designs with gradient fills, rounded corners, and clean styling
+   - Added hover effects with light blue background for better visual feedback
+   - Icons include: Select, Line, Rectangle, Ellipse, Text, Image, Move, Scale, Color, Fill
+
+2. **Enhanced Status Bar**: 
+   - Implemented DrawingStatusPanel showing real-time application state
+   - Displays current tool name (e.g., "Tool: Select", "Tool: Line")
+   - Shows live mouse coordinates updating as cursor moves (e.g., "Position: (120, 245)")
+   - Displays selected shape information when shapes are selected (e.g., "Selected: Rectangle")
+   - Professional three-panel layout with proper borders and spacing
+
+3. **Improved Text Input Dialog**: 
+   - Created TextInputDialog with comprehensive font selection controls
+   - Font family dropdown with all available system fonts
+   - Font style selection (Plain, Bold, Italic, Bold+Italic)
+   - Font size selector (8-72 points)
+   - Live preview showing selected font styling
+   - Fixed font persistence bug - selected fonts now properly persist when creating text shapes
+   - Double-click text editing also uses the dialog for consistency
+
+4. **Fixed Color Picker Bugs**: 
+   - Fixed null pointer exceptions when selecting colors
+   - Added null checks and default colors (Black for foreground, White for fill)
+   - Fixed color picker cancellation - colors only change if user clicks OK
+   - Updated dialog titles to clearly distinguish "Fore Color" vs "Fill Color"
+
+5. **Updated Splash Screen**: 
+   - Modernized splash screen with professional design
+   - Added "Tap to Enter the Drawing Application" message
+   - Fixed image loading with proper resource paths
+
+### Previous Major Enhancements - UI/UX & Performance Improvements
 
 1. **Fixed SearchService Selection Logic**: 
    - Implemented proper top-most shape detection by iterating through shapes backwards (last-drawn to first-drawn)
@@ -95,15 +131,14 @@ The application will launch in the VNC viewer where you can interact with the dr
 
 ## Features
 - **Drawing Tools**: Lines, rectangles, ellipses, text, and images
-- **Selection Tool**: Select and manipulate existing shapes
-- **Color Selection**: Choose colors for outlines and fills
+- **Selection Tool**: Select and manipulate existing shapes with dedicated Move and Scale tools
+- **Color Selection**: Choose colors for outlines and fills with improved dialogs
+- **Text Tool**: Create text with custom fonts, styles, and sizes via interactive dialog
 - **File Operations**: Save and load drawings in XML format
 - **Undo/Redo**: Full undo/redo support for all drawing operations
-- **Property Sheet**: View and edit shape properties
-
-## Known Limitations
-- **Font Selection**: The advanced font chooser dialog is currently unavailable due to a missing dependency. Text uses the default system font.
-- **Font Module**: The `fontchooser` module is not included in this repository and has been removed from the build configuration.
+- **Property Sheet**: View and edit shape properties with real-time bidirectional synchronization
+- **Status Bar**: Real-time display of current tool, mouse position, and selected shape information
+- **Modern UI**: Vector-based toolbar icons with hover effects and professional styling
 
 ## Architecture
 - **MVC Pattern**: The application uses Model-View-Controller architecture
