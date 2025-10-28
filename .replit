@@ -29,5 +29,9 @@ task = "shell.exec"
 args = "cd draw && mvn exec:java -Dexec.mainClass=\"com.gabriel.draw.Main\""
 
 [[ports]]
+localPort = 33959
+externalPort = 3000
+
+[[ports]]
 localPort = 45961
 externalPort = 80
