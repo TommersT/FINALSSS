@@ -66,15 +66,23 @@ public class ActionController implements ActionListener {
             }
             appService.setShapeMode(ShapeMode.Image);
         } else if (ActionCommand.COLOR.equals(cmd)) {
-            Color color = JColorChooser.showDialog(component, "Select color", appService.getColor());
-            appService.setColor(color);
+            Color currentColor = appService.getColor();
+            if (currentColor == null) currentColor = Color.BLACK;
+            Color color = JColorChooser.showDialog(component, "Select Fore Color", currentColor);
+            if (color != null) {
+                appService.setColor(color);
+            }
         } else if (ActionCommand.TEXT.equals(cmd)) {
             // NOTE: fontchooser module missing - using default font for now
             // Users can still add text with the current font
             appService.setShapeMode(ShapeMode.Text);
         } else if (ActionCommand.FILL.equals(cmd)) {
-            Color color = JColorChooser.showDialog(component, "Select color", appService.getColor());
-            appService.setFill(color);
+            Color currentFill = appService.getFill();
+            if (currentFill == null) currentFill = Color.WHITE;
+            Color color = JColorChooser.showDialog(component, "Select Fill Color", currentFill);
+            if (color != null) {
+                appService.setFill(color);
+            }
         } else if (ActionCommand.SAVEAS.equals(cmd)) {
             FileDialog fDialog = new FileDialog(frame, "Save", FileDialog.SAVE);
             fDialog.setVisible(true);
@@ -84,6 +92,10 @@ public class ActionController implements ActionListener {
 
         } else if (ActionCommand.SELECT.equals(cmd)) {
             appService.clearSelections();
+            appService.setShapeMode(ShapeMode.Select);
+        } else if (ActionCommand.MOVE.equals(cmd)) {
+            appService.setShapeMode(ShapeMode.Select);
+        } else if (ActionCommand.SCALE.equals(cmd)) {
             appService.setShapeMode(ShapeMode.Select);
         } else if (ActionCommand.SAVE.equals(cmd)) {
             String filename = drawing.getFilename();

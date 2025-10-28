@@ -1,0 +1,99 @@
+🧠 Prompt: Refactor and enhance the DrawFX application UI and logic
+
+I have a Java Swing drawing application similar to what’s shown in the attached screenshot. The application currently allows drawing shapes (Line, Ellipse, Rectangle, and Text), editing colors, and displaying properties in a property table.
+
+Please refactor and enhance it with the following improvements — focus on both user experience and internal functionality:
+
+🎨 Toolbar Improvements
+
+Replace the existing image-based toolbar buttons with vector-style icons (e.g., JButton with ImageIcon from a resource folder or font icons).
+
+Keep the layout clean and minimal — consistent icon size and spacing.
+
+Add “Move” and “Scale” tools next to the Select tool.
+
+Ensure all tools show hover tooltips with their names and descriptions.
+
+Use a flat modern look — no 3D borders or unnecessary lines.
+
+🖊️ Shape Drawing Functionality Fixes
+
+Fix the Line, Ellipse, and Rectangle tools so they draw correctly on the canvas without offset or flickering.
+
+Allow real-time drawing previews while dragging the mouse.
+
+Maintain proper z-order of shapes.
+
+Ensure each shape supports:
+
+Moving
+
+Resizing via handles
+
+Properly updating coordinates and dimensions during drag
+
+Fix the handle rendering for text objects — they should appear correctly and allow repositioning.
+
+🧾 Property Table Enhancements
+
+Ensure real-time synchronization between the property table and the selected shape:
+
+When moving or resizing a shape, update its X/Y/Width/Height immediately.
+
+When editing a property (like color, thickness, or position) in the table, update the shape instantly on the canvas.
+
+Add listeners for bidirectional updates.
+
+Fix the Fill Color and Fore Color bugs — color selection dialogs should work without exceptions and apply immediately.
+
+🔤 Text Tool Fixes
+
+When selecting the Text tool and clicking on the canvas:
+
+Open a Text Input Dialog allowing users to input text.
+
+Include controls for Font Family, Font Style (Bold/Italic/Plain), and Font Size.
+
+Fix existing text rendering and text movement bugs.
+
+Make text editable after being placed (on double-click or context menu).
+
+🔁 Undo/Redo Improvements
+
+Implement undoable actions for:
+
+Creating a shape
+
+Deleting a shape
+
+Moving, resizing, recoloring a shape
+
+Editing text or any property value
+
+Ensure Undo/Redo follows every modification in sequence correctly.
+
+Disable (lock) the Undo/Redo buttons when no corresponding actions are available.
+
+Use a robust command pattern or UndoManager for state tracking.
+
+💾 Save and Load Enhancements
+
+Fix saving/loading functionality to correctly preserve:
+
+Shape type, coordinates, colors, line thickness
+
+Text content and font settings
+
+Use a reliable file format (e.g., JSON or XML).
+
+Ensure reopening the saved file fully restores the scene as it was.
+
+📊 Status Bar
+
+Add a status bar at the bottom of the window showing:
+
+Current tool selected
+
+Mouse coordinates
+
+Shape count or name of the selected shape

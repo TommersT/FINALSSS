@@ -1,89 +1,75 @@
 package com.gabriel.draw.view;
 
-import com.gabriel.draw.controller.ActionController;
+import com.gabriel.draw.util.ModernIconFactory;
 import com.gabriel.drawfx.ActionCommand;
-import com.gabriel.drawfx.service.AppService;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
-import java.net.URL;
 
 public class DrawingToolBar extends JToolBar {
 
     protected JTextArea textArea;
     ActionListener actionListener;
 
-  public DrawingToolBar( ActionListener actionListener){
+    public DrawingToolBar(ActionListener actionListener){
         setFloatable(false);
         setRollover(true);
         this.actionListener = actionListener;
+        setBackground(new Color(240, 240, 240));
+        setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(200, 200, 200)));
         addButtons();
-
-        //Lay out the main panel.
-        setPreferredSize(new Dimension(200, 35));
+        setPreferredSize(new Dimension(200, 40));
     }
 
     protected void addButtons() {
-        JButton button = null;
+        add(makeToolButton("undo", ActionCommand.UNDO, "Undo (Ctrl+Z)"));
+        add(makeToolButton("redo", ActionCommand.REDO, "Redo (Ctrl+Y)"));
         
-        button = makeNavigationButton("undo", ActionCommand.UNDO, "Undo", "Undo");
-        add(button);
+        addSeparator(new Dimension(10, 30));
         
-        button = makeNavigationButton("redo", ActionCommand.REDO, "Redo", "Redo");
-        add(button);
+        add(makeToolButton("select", ActionCommand.SELECT, "Select"));
+        add(makeToolButton("move", ActionCommand.MOVE, "Move"));
+        add(makeToolButton("scale", ActionCommand.SCALE, "Scale/Resize"));
         
-        addSeparator();
+        addSeparator(new Dimension(10, 30));
         
-        button = makeNavigationButton("select", ActionCommand.SELECT, "Select (for Move & Scale)", "Select");
-        add(button);
+        add(makeToolButton("line", ActionCommand.LINE, "Line"));
+        add(makeToolButton("rect", ActionCommand.RECT, "Rectangle"));
+        add(makeToolButton("ellipse", ActionCommand.ELLIPSE, "Ellipse"));
+        add(makeToolButton("text", ActionCommand.TEXT, "Text"));
+        add(makeToolButton("image", ActionCommand.IMAGE, "Image"));
         
-        button = makeNavigationButton("rect", ActionCommand.RECT, "Rectangle", "Rectangle");
-        add(button);
-
-        button = makeNavigationButton("ellipse", ActionCommand.ELLIPSE, "Ellipse", "Ellipse");
-        add(button);
+        addSeparator(new Dimension(10, 30));
         
-        button = makeNavigationButton("line", ActionCommand.LINE, "Line", "Line");
-        add(button);
-
-        button = makeNavigationButton("text", ActionCommand.TEXT, "Text", "Text");
-        add(button);
-
-        button = makeNavigationButton("image", ActionCommand.IMAGE, "Image", "Image");
-        add(button);
-        
-        addSeparator();
-        
-        button = makeNavigationButton("color", ActionCommand.COLOR, "Color", "Color");
-        add(button);
-        
-        button = makeNavigationButton("fill", ActionCommand.FILL, "Fill", "Fill");
-        add(button);
+        add(makeToolButton("color", ActionCommand.COLOR, "Fore Color"));
+        add(makeToolButton("fill", ActionCommand.FILL, "Fill Color"));
     }
 
-    protected JButton makeNavigationButton(String imageName,
-            String actionCommand,
-            String toolTipText,
-            String altText) {
-        String imgLocation = "images/" + imageName + ".png";
-        URL imageURL = DrawingToolBar.class.getResource(imgLocation);
-
+    protected JButton makeToolButton(String iconType, String actionCommand, String toolTipText) {
         JButton button = new JButton();
+        button.setIcon(ModernIconFactory.createIcon(iconType));
         button.setActionCommand(actionCommand);
         button.setToolTipText(toolTipText);
         button.addActionListener(actionListener);
         button.setFocusable(false);
-        button.setBorderPainted(true);
-
-        if (imageURL != null) {
-            ImageIcon icon = new ImageIcon(imageURL, altText);
-            button.setIcon(icon);
-        } else {
-            button.setText(altText);
-            System.err.println("Resource not found: " + imgLocation);
-        }
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setPreferredSize(new Dimension(32, 32));
+        button.setMargin(new Insets(4, 4, 4, 4));
+        
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBorderPainted(true);
+                button.setContentAreaFilled(true);
+                button.setBackground(new Color(220, 220, 220));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBorderPainted(false);
+                button.setContentAreaFilled(false);
+            }
+        });
+        
         return button;
     }
-
 }

@@ -9,6 +9,8 @@ public class ActionCommand {
     static final public String IMAGE = "image";
     static final public String TEXT = "text";
     static final public String SELECT = "select";
+    static final public String MOVE = "move";
+    static final public String SCALE = "scale";
     static final public String COLOR = "color";
     static final public String FILL = "fill";
     static final public String SAVE = "save";

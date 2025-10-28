@@ -3,12 +3,12 @@ package com.gabriel.draw.view;
 import javax.swing.*;
 import java.awt.*;
 
-public class DrawingStatusPanel extends JPanel {
+public class StatusBar extends JPanel {
     private JLabel toolLabel;
     private JLabel coordinatesLabel;
     private JLabel shapeLabel;
     
-    public DrawingStatusPanel() {
+    public StatusBar() {
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(0, 25));
         setBackground(new Color(240, 240, 240));
@@ -47,8 +47,8 @@ public class DrawingStatusPanel extends JPanel {
         toolLabel.setText("Tool: " + tool);
     }
     
-    public void setPoint(Point p) {
-        coordinatesLabel.setText("X: " + p.x + ", Y: " + p.y);
+    public void setCoordinates(int x, int y) {
+        coordinatesLabel.setText("X: " + x + ", Y: " + y);
     }
     
     public void setShapeInfo(String info) {

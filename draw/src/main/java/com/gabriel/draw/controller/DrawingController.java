@@ -4,6 +4,7 @@ import com.gabriel.draw.component.PropertySheet;
 import com.gabriel.draw.model.*;
 import com.gabriel.draw.model.Rectangle;
 import com.gabriel.draw.view.DrawingStatusPanel;
+import com.gabriel.draw.view.TextInputDialog;
 import com.gabriel.drawfx.DrawMode;
 import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.util.Normalizer;
@@ -65,18 +66,23 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
             if (selectedShape != null && selectedShape.getClass().getSimpleName().equals("Text")) {
                 String currentText = selectedShape.getText();
                 if (currentText == null) currentText = "";
-                String newText = JOptionPane.showInputDialog(
-                    drawingView,
-                    "Edit text:",
-                    currentText
-                );
-                if (newText != null) {
-                    selectedShape.setText(newText);
-                    selectedShape.setWidth(0);
-                    selectedShape.setHeight(0);
-                    drawingView.repaint();
-                    if(propertySheet != null) {
-                        propertySheet.populateTable(appService);
+                Font currentFont = selectedShape.getFont();
+                if (currentFont == null) currentFont = new Font("SansSerif", Font.PLAIN, 12);
+                
+                JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(drawingView);
+                TextInputDialog dialog = TextInputDialog.showDialog(parentFrame, currentText, currentFont);
+                
+                if (dialog.isOkClicked()) {
+                    String newText = dialog.getText();
+                    if (newText != null && !newText.trim().isEmpty()) {
+                        selectedShape.setText(newText);
+                        selectedShape.setFont(dialog.getSelectedFont());
+                        selectedShape.setWidth(0);
+                        selectedShape.setHeight(0);
+                        drawingView.repaint();
+                        if(propertySheet != null) {
+                            propertySheet.populateTable(appService);
+                        }
                     }
                 }
             }
@@ -90,6 +96,7 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
             ShapeMode currentShapeMode = appService.getShapeMode();
             if(currentShapeMode == ShapeMode.Select) {
                 appService.search(start, !e.isControlDown());
+                updateStatusBarShape();
             }
             else {
                 if(currentShape!=null){
@@ -107,20 +114,24 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                         currentShape.getRendererService().render(drawingView.getGraphics(), currentShape, false);
                         break;
                     case Text:
-                        String textContent = JOptionPane.showInputDialog(
-                            drawingView,
-                            "Enter text:",
-                            "Text Input",
-                            JOptionPane.PLAIN_MESSAGE
-                        );
-                        if (textContent != null && !textContent.trim().isEmpty()) {
-                            drawing.setText(textContent);
-                            currentShape = new Text(start);
-                            currentShape.setColor(appService.getColor());
-                            currentShape.setText(textContent);
-                            currentShape.setFont(appService.getFont());
-                            currentShape.getRendererService().render(drawingView.getGraphics(), currentShape, true);
-                            appService.setDrawMode(DrawMode.MousePressed);
+                        JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(drawingView);
+                        TextInputDialog dialog = TextInputDialog.showDialog(parentFrame, "", appService.getFont());
+                        
+                        if (dialog.isOkClicked()) {
+                            String textContent = dialog.getText();
+                            if (textContent != null && !textContent.trim().isEmpty()) {
+                                Font selectedFont = dialog.getSelectedFont();
+                                drawing.setText(textContent);
+                                drawing.setFont(selectedFont);
+                                currentShape = new Text(start);
+                                currentShape.setColor(appService.getColor());
+                                currentShape.setText(textContent);
+                                currentShape.setFont(selectedFont);
+                                currentShape.getRendererService().render(drawingView.getGraphics(), currentShape, true);
+                                appService.setDrawMode(DrawMode.MousePressed);
+                            } else {
+                                return;
+                            }
                         } else {
                             return;
                         }
@@ -255,7 +266,27 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
 
     @Override
     public void mouseMoved(MouseEvent e) {
-        drawingStatusPanel.setPoint(e.getPoint());
+        if (drawingStatusPanel != null) {
+            drawingStatusPanel.setPoint(e.getPoint());
+        }
+    }
+    
+    private void updateStatusBarShape() {
+        if (drawingStatusPanel != null) {
+            Shape selectedShape = drawing.getSelectedShape();
+            if (selectedShape != null) {
+                String shapeName = selectedShape.getClass().getSimpleName();
+                drawingStatusPanel.setShapeName(shapeName);
+            } else {
+                drawingStatusPanel.setShapeName(null);
+            }
+        }
+    }
+    
+    public void updateStatusBarTool(String toolName) {
+        if (drawingStatusPanel != null) {
+            drawingStatusPanel.setToolText(toolName);
+        }
     }
 
     @Override
