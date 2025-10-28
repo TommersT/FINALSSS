@@ -8,6 +8,7 @@ public class TextInputDialog extends JDialog {
     private JComboBox<String> fontFamilyCombo;
     private JComboBox<String> fontStyleCombo;
     private JSpinner fontSizeSpinner;
+    private JLabel previewLabel;
     private boolean okClicked = false;
     
     public TextInputDialog(Frame parent) {
@@ -49,8 +50,27 @@ public class TextInputDialog extends JDialog {
         fontSizeSpinner = new JSpinner(new SpinnerNumberModel(12, 8, 72, 1));
         fontPanel.add(fontSizeSpinner);
         
-        mainPanel.add(textPanel, BorderLayout.CENTER);
-        mainPanel.add(fontPanel, BorderLayout.SOUTH);
+        JPanel previewPanel = new JPanel(new BorderLayout());
+        previewPanel.setBorder(BorderFactory.createTitledBorder("Preview"));
+        previewLabel = new JLabel("Preview Text", SwingConstants.CENTER);
+        previewLabel.setPreferredSize(new Dimension(300, 60));
+        previewLabel.setOpaque(true);
+        previewLabel.setBackground(Color.WHITE);
+        previewPanel.add(previewLabel, BorderLayout.CENTER);
+        
+        textArea.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { updatePreview(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { updatePreview(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { updatePreview(); }
+        });
+        
+        fontFamilyCombo.addActionListener(e -> updatePreview());
+        fontStyleCombo.addActionListener(e -> updatePreview());
+        fontSizeSpinner.addChangeListener(e -> updatePreview());
+        
+        mainPanel.add(textPanel, BorderLayout.NORTH);
+        mainPanel.add(fontPanel, BorderLayout.CENTER);
+        mainPanel.add(previewPanel, BorderLayout.SOUTH);
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton okButton = new JButton("OK");
@@ -122,6 +142,15 @@ public class TextInputDialog extends JDialog {
     
     public boolean isOkClicked() {
         return okClicked;
+    }
+    
+    private void updatePreview() {
+        String text = textArea.getText();
+        if (text == null || text.trim().isEmpty()) {
+            text = "Preview Text";
+        }
+        previewLabel.setText(text);
+        previewLabel.setFont(getSelectedFont());
     }
     
     public static TextInputDialog showDialog(Frame parent, String initialText, Font initialFont) {

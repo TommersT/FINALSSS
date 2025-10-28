@@ -20,6 +20,11 @@ public class EllipseRenderer extends ShapeRenderer {
         Graphics2D g2 = (Graphics2D) g;
         g2.setStroke(new BasicStroke(shape.getThickness()));
 
+        Composite oldComposite = g2.getComposite();
+        if (!xor && shape.getOpacity() < 1.0f) {
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, shape.getOpacity()));
+        }
+
         if (xor) {
             g2.setXORMode(shape.getColor());
         } else {
@@ -31,6 +36,11 @@ public class EllipseRenderer extends ShapeRenderer {
             }
         }
         g2.drawOval(x, y, width, height);
+        
+        if (!xor) {
+            g2.setComposite(oldComposite);
+        }
+        
         super.render(g, shape, xor);
     }
 }
