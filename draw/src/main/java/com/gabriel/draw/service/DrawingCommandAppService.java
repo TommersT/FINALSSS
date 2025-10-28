@@ -20,7 +20,7 @@ import java.util.List;
 
 public class DrawingCommandAppService implements AppService {
     public AppService appService;
-    protected static AppService drawingCommandAppService = null;
+    protected static DrawingCommandAppService drawingCommandAppService = null;
 
     protected DrawingCommandAppService(AppService appService){
         this.appService = appService;
@@ -30,11 +30,15 @@ public class DrawingCommandAppService implements AppService {
         return drawingCommandAppService;
     }
 
-    public static AppService getInstance(AppService appService){
+    public static DrawingCommandAppService getInstance(AppService appService){
         if(drawingCommandAppService == null){
             drawingCommandAppService = new DrawingCommandAppService(appService);
         };
         return drawingCommandAppService;
+    }
+    
+    public AppService getUnderlyingAppService() {
+        return appService;
     }
 
     @Override

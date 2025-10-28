@@ -1,4 +1,4 @@
-modules = ["java-graalvm22.3"]
+modules = ["java-graalvm22.3", "java-graalvm-17"]
 [agent]
 expertMode = true
 
@@ -26,7 +26,7 @@ outputType = "vnc"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd draw && mvn exec:java -Dexec.mainClass=\"com.gabriel.draw.Main\""
+args = "cd draw && mvn exec:java"
 
 [[ports]]
 localPort = 33959

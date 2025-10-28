@@ -1,29 +1,34 @@
 package com.gabriel.draw.command;
 
+import com.gabriel.draw.service.DrawingCommandAppService;
 import com.gabriel.drawfx.command.Command;
 import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.AppService;
 
 public class AddShapeCommand implements Command{
     Shape shape;
-    AppService appService;
+    AppService underlyingAppService;
 
     public AddShapeCommand(AppService appService, Shape shape){
         this.shape = shape;
-        this.appService = appService;
+        if (appService instanceof DrawingCommandAppService) {
+            this.underlyingAppService = ((DrawingCommandAppService) appService).getUnderlyingAppService();
+        } else {
+            this.underlyingAppService = appService;
+        }
     }
     @Override
     public void execute() {
-        appService.create(shape);
+        underlyingAppService.create(shape);
     }
 
     @Override
     public void undo() {
-        appService.delete(shape);
+        underlyingAppService.delete(shape);
     }
 
     @Override
     public void redo() {
-        appService.create(shape);
+        underlyingAppService.create(shape);
     }
 }

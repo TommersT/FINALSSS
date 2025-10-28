@@ -1,5 +1,6 @@
 package com.gabriel.draw.command;
 
+import com.gabriel.draw.service.DrawingCommandAppService;
 import com.gabriel.drawfx.command.Command;
 import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.AppService;
@@ -8,7 +9,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class MoveCommand implements Command {
-    private AppService appService;
+    private AppService underlyingAppService;
     private List<ShapeMoveData> moveData;
     private Point start;
     private Point end;
@@ -24,12 +25,16 @@ public class MoveCommand implements Command {
     }
     
     public MoveCommand(AppService appService, Point start, Point end) {
-        this.appService = appService;
+        if (appService instanceof DrawingCommandAppService) {
+            this.underlyingAppService = ((DrawingCommandAppService) appService).getUnderlyingAppService();
+        } else {
+            this.underlyingAppService = appService;
+        }
         this.start = start;
         this.end = end;
         this.moveData = new ArrayList<>();
         
-        List<Shape> selectedShapes = appService.getSelectedShapes();
+        List<Shape> selectedShapes = underlyingAppService.getSelectedShapes();
         for (Shape shape : selectedShapes) {
             moveData.add(new ShapeMoveData(shape));
         }
@@ -37,7 +42,7 @@ public class MoveCommand implements Command {
     
     @Override
     public void execute() {
-        appService.move(start, end);
+        underlyingAppService.move(start, end);
     }
     
     @Override
