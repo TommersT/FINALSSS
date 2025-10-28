@@ -73,10 +73,10 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                 if (currentText == null) currentText = "";
                 Font currentFont = selectedShape.getFont();
                 if (currentFont == null) currentFont = new Font("SansSerif", Font.PLAIN, 12);
-                
+
                 JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(drawingView);
                 TextInputDialog dialog = TextInputDialog.showDialog(parentFrame, currentText, currentFont);
-                
+
                 if (dialog.isOkClicked()) {
                     String newText = dialog.getText();
                     if (newText != null && !newText.trim().isEmpty()) {
@@ -102,7 +102,7 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
             isDraggingForMoveOrScale = false;
             originalLocations = new java.util.HashMap<>();
             originalSizes = new java.util.HashMap<>();
-            
+
             ShapeMode currentShapeMode = appService.getShapeMode();
             if(currentShapeMode == ShapeMode.Select) {
                 appService.search(start, !e.isControlDown());
@@ -135,7 +135,7 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                     case Text:
                         JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(drawingView);
                         TextInputDialog dialog = TextInputDialog.showDialog(parentFrame, "", appService.getFont());
-                        
+
                         if (dialog.isOkClicked()) {
                             String textContent = dialog.getText();
                             if (textContent != null && !textContent.trim().isEmpty()) {
@@ -185,7 +185,7 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                         Normalizer.normalize(selectedShape);
                     }
                 }
-                
+
                 if (isDraggingForMoveOrScale && dragStartPoint != null && originalLocations != null) {
                     for (Shape shape : originalLocations.keySet()) {
                         shape.setLocation(new Point(originalLocations.get(shape)));
@@ -195,7 +195,7 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                             shape.setHeight(size.height);
                         }
                     }
-                    
+
                     ToolMode toolMode = appService.getToolMode();
                     if (toolMode == ToolMode.MOVE || (toolMode == ToolMode.SELECT && selectedShape != null && selectedShape.getSelectionMode() == SelectionMode.None)) {
                         appService.move(dragStartPoint, end);
@@ -251,24 +251,24 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                                 int margin = 20;
                                 if(oldBounds == null) {
                                     oldBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
-                                        shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin);
+                                            shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin);
                                 } else {
                                     oldBounds.add(new java.awt.Rectangle(loc.x - margin, loc.y - margin,
-                                        shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin));
+                                            shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin));
                                 }
-                                
+
                                 int dx = end.x - start.x;
                                 int dy = end.y - start.y;
                                 shape.getLocation().x += dx;
                                 shape.getLocation().y += dy;
-                                
+
                                 loc = shape.getLocation();
                                 if(newBounds == null) {
                                     newBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
-                                        shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin);
+                                            shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin);
                                 } else {
                                     newBounds.add(new java.awt.Rectangle(loc.x - margin, loc.y - margin,
-                                        shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin));
+                                            shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin));
                                 }
                             }
                         }
@@ -277,13 +277,13 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                         Point loc = selectedShape.getLocation();
                         int margin = 20;
                         oldBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
-                            selectedShape.getWidth() + 2 * margin, selectedShape.getHeight() + 2 * margin);
-                        
+                                selectedShape.getWidth() + 2 * margin, selectedShape.getHeight() + 2 * margin);
+
                         Point scaleEnd = end;
                         if (e.isShiftDown()) {
                             scaleEnd = maintainAspectRatio(selectedShape, start, end);
                         }
-                        
+
                         int dx = scaleEnd.x - start.x;
                         int dy = scaleEnd.y - start.y;
                         int height = selectedShape.getHeight();
@@ -315,10 +315,10 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                         } else if(selectedShape.getSelectionMode() == SelectionMode.MiddleBottom){
                             selectedShape.setHeight(height + dy);
                         }
-                        
+
                         loc = selectedShape.getLocation();
                         newBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
-                            selectedShape.getWidth() + 2 * margin, selectedShape.getHeight() + 2 * margin);
+                                selectedShape.getWidth() + 2 * margin, selectedShape.getHeight() + 2 * margin);
                     }
 
                     if(oldBounds != null) {
@@ -340,11 +340,11 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                     Point loc = currentShape.getLocation();
                     int margin = 20;
                     java.awt.Rectangle oldBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
-                        currentShape.getWidth() + 2 * margin, currentShape.getHeight() + 2 * margin);
+                            currentShape.getWidth() + 2 * margin, currentShape.getHeight() + 2 * margin);
                     appService.scale(currentShape, end);
                     loc = currentShape.getLocation();
                     java.awt.Rectangle newBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
-                        currentShape.getWidth() + 2 * margin, currentShape.getHeight() + 2 * margin);
+                            currentShape.getWidth() + 2 * margin, currentShape.getHeight() + 2 * margin);
                     drawingView.repaint(oldBounds);
                     drawingView.repaint(newBounds);
                 }
@@ -358,7 +358,7 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
             drawingStatusPanel.setPoint(e.getPoint());
         }
     }
-    
+
     private void updateStatusBarShape() {
         if (drawingStatusPanel != null) {
             List<Shape> selectedShapes = appService.getSelectedShapes();
@@ -375,41 +375,41 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
             }
         }
     }
-    
+
     public void updateStatusBarTool(String toolName) {
         if (drawingStatusPanel != null) {
             drawingStatusPanel.setToolText(toolName);
         }
     }
-    
+
     private Point maintainAspectRatio(Shape shape, Point start, Point end) {
         int originalWidth = shape.getWidth();
         int originalHeight = shape.getHeight();
-        
+
         if (originalWidth == 0 || originalHeight == 0) {
             return end;
         }
-        
+
         double aspectRatio = (double) originalWidth / originalHeight;
-        
+
         int dx = end.x - start.x;
         int dy = end.y - start.y;
-        
+
         int signX = dx >= 0 ? 1 : -1;
         int signY = dy >= 0 ? 1 : -1;
-        
+
         int absDx = Math.abs(dx);
         int absDy = Math.abs(dy);
-        
+
         if (absDx > absDy) {
             absDy = (int) (absDx / aspectRatio);
         } else {
             absDx = (int) (absDy * aspectRatio);
         }
-        
+
         dx = absDx * signX;
         dy = absDy * signY;
-        
+
         return new Point(start.x + dx, start.y + dy);
     }
 
