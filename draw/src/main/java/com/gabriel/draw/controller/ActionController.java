@@ -112,11 +112,17 @@ public class ActionController implements ActionListener {
                 appService.setFill(color);
             }
         } else if (ActionCommand.SAVEAS.equals(cmd)) {
-            FileDialog fDialog = new FileDialog(frame, "Save", FileDialog.SAVE);
+            FileDialog fDialog = new FileDialog(frame, "Save As", FileDialog.SAVE);
+            fDialog.setFile("*.xml");
             fDialog.setVisible(true);
-            String path = fDialog.getDirectory() + fDialog.getFile();
-            File f = new File(path);
-            appService.saveas(path);
+            if (fDialog.getFile() != null) {
+                String path = fDialog.getDirectory() + fDialog.getFile();
+                if (!path.toLowerCase().endsWith(".xml")) {
+                    path += ".xml";
+                }
+                drawing.setFilename(path);
+                appService.saveas(path);
+            }
 
         } else if (ActionCommand.SELECT.equals(cmd)) {
             appService.clearSelections();
@@ -136,11 +142,11 @@ public class ActionController implements ActionListener {
             if (drawingController != null) drawingController.updateStatusBarTool("Scale");
         } else if (ActionCommand.SAVE.equals(cmd)) {
             String filename = drawing.getFilename();
-            if (filename == null) {
+            if (filename == null || filename.isEmpty()) {
                 JFileChooser fileChooser = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
                 fileChooser.addChoosableFileFilter(new FileFilter() {
                     public String getDescription() {
-                        return "Xml Documents (*.xml)";
+                        return "XML Documents (*.xml)";
                     }
 
                     public boolean accept(File f) {
@@ -153,16 +159,43 @@ public class ActionController implements ActionListener {
                 });
                 int result = fileChooser.showSaveDialog(null);
                 if (result == JFileChooser.APPROVE_OPTION) {
-                    // set the label to the path of the selected file
                     filename = fileChooser.getSelectedFile().getAbsolutePath();
-                    //drawing.setFilename(filename);
+                    if (!filename.toLowerCase().endsWith(".xml")) {
+                        filename += ".xml";
+                    }
+                    drawing.setFilename(filename);
+                } else {
+                    return;
                 }
             }
-            XmlDocumentService docService = new XmlDocumentService(drawing);
-            docService.save();
+            appService.save();
 
             // TODO Insert the handler for the File menuitems.
 
+        } else if (ActionCommand.OPEN.equals(cmd)) {
+            JFileChooser fileChooser = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+            fileChooser.addChoosableFileFilter(new FileFilter() {
+                public String getDescription() {
+                    return "XML Documents (*.xml)";
+                }
+
+                public boolean accept(File f) {
+                    if (f.isDirectory()) {
+                        return true;
+                    } else {
+                        return f.getName().toLowerCase().endsWith(".xml");
+                    }
+                }
+            });
+            int result = fileChooser.showOpenDialog(null);
+            if (result == JFileChooser.APPROVE_OPTION) {
+                String filename = fileChooser.getSelectedFile().getAbsolutePath();
+                drawing.setFilename(filename);
+                appService.open(filename);
+            }
+        } else if (ActionCommand.NEW.equals(cmd)) {
+            appService.newDrawing();
+            drawing.setFilename(null);
         } else if (ActionCommand.DELETE.equals(cmd)) {
             Shape selectedShape = appService.getSelectedShape();
             if (selectedShape != null) {

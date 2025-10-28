@@ -57,12 +57,17 @@ public class XmlDocumentService implements DocumentService {
 
                 Element element = document.createElement("Shape");
                 attr = document.createAttribute("type");
+                String shapeType = shape.getClass().getSimpleName();
                 if (shape.getClass() == Line.class) {
                     attr.setValue("Line");
                 } else if (shape.getClass() == Ellipse.class) {
                     attr.setValue("Ellipse");
                 } else if (shape.getClass() == Rectangle.class) {
                     attr.setValue("Rectangle");
+                } else if (shapeType.equals("Text")) {
+                    attr.setValue("Text");
+                } else if (shapeType.equals("Picture")) {
+                    attr.setValue("Picture");
                 }
                 element.setAttributeNode(attr);
                 attr = document.createAttribute("start.x");
@@ -81,10 +86,36 @@ public class XmlDocumentService implements DocumentService {
                 attr.setValue(String.valueOf(shape.getColor()));
                 element.setAttributeNode(attr);
 
-                // FIX: Added saving for thickness
                 attr = document.createAttribute("thickness");
                 attr.setValue(String.valueOf(shape.getThickness()));
                 element.setAttributeNode(attr);
+
+                attr = document.createAttribute("fill");
+                if (shape.getFill() != null) {
+                    attr.setValue(String.valueOf(shape.getFill()));
+                } else {
+                    attr.setValue("null");
+                }
+                element.setAttributeNode(attr);
+
+                if (shapeType.equals("Text")) {
+                    attr = document.createAttribute("text");
+                    attr.setValue(shape.getText() != null ? shape.getText() : "");
+                    element.setAttributeNode(attr);
+                    attr = document.createAttribute("font.family");
+                    attr.setValue(shape.getFont() != null ? shape.getFont().getFamily() : "SansSerif");
+                    element.setAttributeNode(attr);
+                    attr = document.createAttribute("font.style");
+                    attr.setValue(String.valueOf(shape.getFont() != null ? shape.getFont().getStyle() : Font.PLAIN));
+                    element.setAttributeNode(attr);
+                    attr = document.createAttribute("font.size");
+                    attr.setValue(String.valueOf(shape.getFont() != null ? shape.getFont().getSize() : 12));
+                    element.setAttributeNode(attr);
+                } else if (shapeType.equals("Picture")) {
+                    attr = document.createAttribute("imageFilename");
+                    attr.setValue(shape.getText() != null ? shape.getText() : "");
+                    element.setAttributeNode(attr);
+                }
 
                 root.appendChild(element);
             }
@@ -152,19 +183,65 @@ public class XmlDocumentService implements DocumentService {
                     thickness = Integer.parseInt(attr.getNodeValue());
                 }
 
+                // Load fill color
+                attr = map.getNamedItem("fill");
+                Color fillColor = null;
+                if(attr != null && !attr.getNodeValue().equals("null")) {
+                    fillColor = convertColor(attr.getNodeValue());
+                }
+
                 attr = map.getNamedItem("type");
-                if (attr.getNodeValue().equals("Rectangle")) {
+                String shapeType = attr.getNodeValue();
+                if (shapeType.equals("Rectangle")) {
                     shape = new Rectangle(start, width, height);
-                } else if (attr.getNodeValue().equals("Ellipse")) {
-                    shape = new Ellipse(start, end); // Use corrected end point
-                } else if (attr.getNodeValue().equals("Line")) {
-                    shape = new Line(start, end); // Use corrected end point
+                } else if (shapeType.equals("Ellipse")) {
+                    shape = new Ellipse(start, end);
+                } else if (shapeType.equals("Line")) {
+                    shape = new Line(start, end);
+                } else if (shapeType.equals("Text")) {
+                    shape = new com.gabriel.draw.model.Text(start);
+                    shape.setWidth(width);
+                    shape.setHeight(height);
+                    
+                    attr = map.getNamedItem("text");
+                    if (attr != null) {
+                        shape.setText(attr.getNodeValue());
+                    }
+                    
+                    String fontFamily = "SansSerif";
+                    int fontStyle = Font.PLAIN;
+                    int fontSize = 12;
+                    
+                    attr = map.getNamedItem("font.family");
+                    if (attr != null) {
+                        fontFamily = attr.getNodeValue();
+                    }
+                    attr = map.getNamedItem("font.style");
+                    if (attr != null) {
+                        fontStyle = Integer.parseInt(attr.getNodeValue());
+                    }
+                    attr = map.getNamedItem("font.size");
+                    if (attr != null) {
+                        fontSize = Integer.parseInt(attr.getNodeValue());
+                    }
+                    
+                    shape.setFont(new Font(fontFamily, fontStyle, fontSize));
+                } else if (shapeType.equals("Picture")) {
+                    String imageFilename = "";
+                    attr = map.getNamedItem("imageFilename");
+                    if (attr != null) {
+                        imageFilename = attr.getNodeValue();
+                    }
+                    shape = new com.gabriel.draw.model.Picture(start, end, imageFilename);
+                    shape.setWidth(width);
+                    shape.setHeight(height);
                 }
 
                 // FIX: Apply the loaded properties and add to drawing
                 if (shape != null) {
                     shape.setColor(color);
                     shape.setThickness(thickness);
+                    shape.setFill(fillColor);
                     drawing.getShapes().add(shape);
                 }
             }

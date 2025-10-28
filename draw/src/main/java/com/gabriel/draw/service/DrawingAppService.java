@@ -121,10 +121,15 @@ public class DrawingAppService implements AppService {
 
     @Override
     public void setFill(Color color) {
-        Shape selectedShape = getSelectedShape();
-        if (selectedShape != null) {
-            selectedShape.setFill(color);
-        } else {
+        List<Shape> shapes = drawing.getShapes();
+        boolean isEmpty = true;
+        for (Shape shape : shapes) {
+            if (shape.isSelected()) {
+                shape.setFill(color);
+                isEmpty = false;
+            }
+        }
+        if(isEmpty){
             drawing.setFill(color);
         }
         if (drawingView != null) drawingView.repaint();
