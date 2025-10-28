@@ -31,7 +31,3 @@ args = "cd draw && mvn exec:java -Dexec.mainClass=\"com.gabriel.draw.Main\""
 [[ports]]
 localPort = 45961
 externalPort = 80
-
-[[ports]]
-localPort = 46425
-externalPort = 3000

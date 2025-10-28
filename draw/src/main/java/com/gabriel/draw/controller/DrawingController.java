@@ -26,6 +26,8 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
     private Point end;
     private Point dragStartPoint;
     private boolean isDraggingForMoveOrScale = false;
+    private java.util.Map<Shape, Point> originalLocations;
+    private java.util.Map<Shape, java.awt.Dimension> originalSizes;
 
     private final AppService appService;
     private final Drawing drawing;
@@ -98,9 +100,19 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
             start = e.getPoint();
             dragStartPoint = new Point(start);
             isDraggingForMoveOrScale = false;
+            originalLocations = new java.util.HashMap<>();
+            originalSizes = new java.util.HashMap<>();
+            
             ShapeMode currentShapeMode = appService.getShapeMode();
             if(currentShapeMode == ShapeMode.Select) {
                 appService.search(start, !e.isControlDown());
+                List<Shape> shapes = drawing.getShapes();
+                for(Shape shape : shapes) {
+                    if (shape.isSelected()) {
+                        originalLocations.put(shape, new Point(shape.getLocation()));
+                        originalSizes.put(shape, new java.awt.Dimension(shape.getWidth(), shape.getHeight()));
+                    }
+                }
                 updateStatusBarShape();
             }
             else {
@@ -174,7 +186,16 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                     }
                 }
                 
-                if (isDraggingForMoveOrScale && dragStartPoint != null) {
+                if (isDraggingForMoveOrScale && dragStartPoint != null && originalLocations != null) {
+                    for (Shape shape : originalLocations.keySet()) {
+                        shape.setLocation(new Point(originalLocations.get(shape)));
+                        java.awt.Dimension size = originalSizes.get(shape);
+                        if (size != null) {
+                            shape.setWidth(size.width);
+                            shape.setHeight(size.height);
+                        }
+                    }
+                    
                     ToolMode toolMode = appService.getToolMode();
                     if (toolMode == ToolMode.MOVE || (toolMode == ToolMode.SELECT && selectedShape != null && selectedShape.getSelectionMode() == SelectionMode.None)) {
                         appService.move(dragStartPoint, end);
