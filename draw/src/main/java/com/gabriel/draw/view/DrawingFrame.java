@@ -10,6 +10,7 @@ import com.gabriel.drawfx.ShapeMode;
 import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.AppService;
+import com.gabriel.drawfx.command.CommandService;
 import com.gabriel.property.PropertyOptions;
 import com.gabriel.property.event.PropertyEventAdapter;
 import com.gabriel.property.property.Property;
@@ -53,6 +54,7 @@ public class DrawingFrame extends JFrame {
 
         drawingToolBar = new DrawingToolBar(actionListener);
         drawingToolBar.setVisible(true);
+        actionListener.setToolBar(drawingToolBar);
 
         drawingView = new DrawingView(appService);
         actionListener.setComponent(drawingView);
@@ -60,6 +62,7 @@ public class DrawingFrame extends JFrame {
 
         drawingController = new DrawingController(appService, drawingView);
         drawingController.setDrawingView(drawingView);
+        actionListener.setDrawingController(drawingController);
 
         drawingView.addMouseMotionListener(drawingController);
         drawingView.addMouseListener(drawingController);
@@ -88,6 +91,12 @@ public class DrawingFrame extends JFrame {
         this.addWindowStateListener(drawingWindowController);
         buildGUI(pane);
         drawingController.setPropertySheet(propertySheet);
+
+        CommandService.addListener((canUndo, canRedo) -> {
+            drawingToolBar.updateUndoRedoState(canUndo, canRedo);
+        });
+
+        drawingToolBar.setActiveTool(com.gabriel.drawfx.ActionCommand.SELECT);
     }
 
     public void buildGUI(Container pane){

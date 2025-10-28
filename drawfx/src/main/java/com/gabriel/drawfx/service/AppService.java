@@ -2,6 +2,7 @@ package com.gabriel.drawfx.service;
 
 import com.gabriel.drawfx.DrawMode;
 import com.gabriel.drawfx.ShapeMode;
+import com.gabriel.drawfx.ToolMode;
 import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.model.Shape;
 
@@ -15,6 +16,9 @@ public interface AppService {
 
     ShapeMode getShapeMode();
     void setShapeMode(ShapeMode shapeMode);
+
+    ToolMode getToolMode();
+    void setToolMode(ToolMode toolMode);
 
     DrawMode getDrawMode();
     void setDrawMode(DrawMode drawMode);
