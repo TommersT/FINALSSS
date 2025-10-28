@@ -233,7 +233,14 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
                         int margin = 20;
                         oldBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
                             selectedShape.getWidth() + 2 * margin, selectedShape.getHeight() + 2 * margin);
-                        appService.scale(selectedShape, start, end);
+                        
+                        if (e.isShiftDown()) {
+                            Point adjustedEnd = maintainAspectRatio(selectedShape, start, end);
+                            appService.scale(selectedShape, start, adjustedEnd);
+                        } else {
+                            appService.scale(selectedShape, start, end);
+                        }
+                        
                         loc = selectedShape.getLocation();
                         newBounds = new java.awt.Rectangle(loc.x - margin, loc.y - margin,
                             selectedShape.getWidth() + 2 * margin, selectedShape.getHeight() + 2 * margin);
@@ -298,6 +305,37 @@ public class DrawingController  implements MouseListener, MouseMotionListener, K
         if (drawingStatusPanel != null) {
             drawingStatusPanel.setToolText(toolName);
         }
+    }
+    
+    private Point maintainAspectRatio(Shape shape, Point start, Point end) {
+        int originalWidth = shape.getWidth();
+        int originalHeight = shape.getHeight();
+        
+        if (originalWidth == 0 || originalHeight == 0) {
+            return end;
+        }
+        
+        double aspectRatio = (double) originalWidth / originalHeight;
+        
+        int dx = end.x - start.x;
+        int dy = end.y - start.y;
+        
+        int signX = dx >= 0 ? 1 : -1;
+        int signY = dy >= 0 ? 1 : -1;
+        
+        int absDx = Math.abs(dx);
+        int absDy = Math.abs(dy);
+        
+        if (absDx > absDy) {
+            absDy = (int) (absDx / aspectRatio);
+        } else {
+            absDx = (int) (absDy * aspectRatio);
+        }
+        
+        dx = absDx * signX;
+        dy = absDy * signY;
+        
+        return new Point(start.x + dx, start.y + dy);
     }
 
     @Override

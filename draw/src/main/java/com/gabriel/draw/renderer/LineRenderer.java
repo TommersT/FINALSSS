@@ -18,6 +18,11 @@ public class LineRenderer extends ShapeRenderer {
 
         Graphics2D g2 = (Graphics2D) g;
         g2.setStroke(new BasicStroke(shape.getThickness()));
+        
+        Composite oldComposite = g2.getComposite();
+        if (!xor && shape.getOpacity() < 1.0f) {
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, shape.getOpacity()));
+        }
 
         if(xor) {
             g2.setXORMode(shape.getColor());
@@ -25,7 +30,12 @@ public class LineRenderer extends ShapeRenderer {
         else {
             g2.setColor(shape.getColor());
             g2.drawLine(x,y,x+width, y+height);
-            super.render(g, shape, xor);
         }
+        
+        if (!xor) {
+            g2.setComposite(oldComposite);
+        }
+        
+        super.render(g, shape, xor);
     }
 }
