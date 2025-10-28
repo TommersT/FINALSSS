@@ -1,12 +1,13 @@
 package com.gabriel.draw.command;
 
+import com.gabriel.draw.service.DrawingCommandAppService;
 import com.gabriel.drawfx.command.Command;
 import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.AppService;
 import java.awt.Point;
 
 public class ScaleCommand implements Command {
-    private AppService appService;
+    private AppService underlyingAppService;
     private Shape shape;
     private Point originalLocation;
     private int originalWidth;
@@ -15,7 +16,11 @@ public class ScaleCommand implements Command {
     private Point end;
     
     public ScaleCommand(AppService appService, Shape shape, Point start, Point end) {
-        this.appService = appService;
+        if (appService instanceof DrawingCommandAppService) {
+            this.underlyingAppService = ((DrawingCommandAppService) appService).getUnderlyingAppService();
+        } else {
+            this.underlyingAppService = appService;
+        }
         this.shape = shape;
         this.start = start;
         this.end = end;
@@ -26,7 +31,7 @@ public class ScaleCommand implements Command {
     
     @Override
     public void execute() {
-        appService.scale(shape, start, end);
+        underlyingAppService.scale(shape, start, end);
     }
     
     @Override
@@ -38,6 +43,6 @@ public class ScaleCommand implements Command {
     
     @Override
     public void redo() {
-        execute();
+        underlyingAppService.scale(shape, start, end);
     }
 }
