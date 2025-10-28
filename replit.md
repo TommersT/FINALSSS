@@ -19,7 +19,24 @@ This is a multi-module Maven project with the following modules:
 
 ## Recent Changes (October 28, 2025)
 
-### Latest Update - Critical Bug Fixes (October 28, 2025 - Late Evening)
+### Latest Update - Critical Infinite Recursion Bug Fixes (October 28, 2025 - Latest)
+
+1. **Fixed Infinite Recursion in Command Pattern**:
+   - **Root Cause**: Commands (AddShapeCommand, DeleteShapeCommand, MoveCommand, ScaleCommand) were calling the wrapped `DrawingCommandAppService`, which would create another command, leading to infinite recursion and stack overflow
+   - **Solution**: Modified all command classes to call the underlying `DrawingAppService` directly instead of the wrapper
+   - Added `getUnderlyingAppService()` method to `DrawingCommandAppService` to expose the base service
+   - Updated `AddShapeCommand`, `DeleteShapeCommand`, `MoveCommand`, and `ScaleCommand` to extract and use the underlying service
+   - This fix ensures shapes can now be added to the canvas without infinite loops
+   - Undo/redo operations now work correctly without creating recursive command chains
+
+2. **Commands Fixed**:
+   - `AddShapeCommand`: Now directly calls underlying service for shape creation
+   - `DeleteShapeCommand`: Now directly calls underlying service for shape deletion
+   - `MoveCommand`: Now directly calls underlying service for shape movement
+   - `ScaleCommand`: Now directly calls underlying service for shape scaling
+   - All property commands (SetColorCommand, SetTextCommand, etc.) were already correct
+
+### Previous Update - Critical Bug Fixes (October 28, 2025 - Late Evening)
 
 1. **Fixed Command Pattern for Undo/Redo**:
    - Implemented proper state caching mechanism in DrawingController
