@@ -1,7 +1,6 @@
-// tommerst/finalsss/FINALSSS-4b53253892a92ed882030feb653ef76e91b6ab5b/draw/src/main/java/com/gabriel/draw/controller/PropertyEventListener.java
 package com.gabriel.draw.controller;
 
-import com.gabriel.draw.command.*; // Import all commands from the package
+import com.gabriel.draw.command.*; // Import all commands
 import com.gabriel.drawfx.ShapeMode;
 import com.gabriel.drawfx.command.CommandService; // Import CommandService
 import com.gabriel.property.event.PropertyEventAdapter;
@@ -22,117 +21,151 @@ public class PropertyEventListener extends PropertyEventAdapter {
     @Override
     public void onPropertyUpdated(Property property) {
 
-        // *** NEW: Check if another command is currently executing ***
+        // Prevent updates triggered by command execution/undo/redo
         if (CommandService.isExecutingCommand()) {
-            return; // Ignore updates triggered by undo/redo/execute itself
+            return;
         }
-        // *** END NEW ***
 
         Command cmd = null; // Initialize command to null
+        String propName = property.getName();
+        Object propValue = property.getValue(); // Get value once
 
         try {
-            // --- Existing checks remain the same ---
-            if (property.getName().equals("Fill color")) {
-                Color oldValue = appService.getFill();
-                Color newValue = (Color) property.getValue();
-                if (!Objects.equals(oldValue, newValue)) {
-                    cmd = new SetFillCommand(appService, oldValue, newValue);
-                }
-            } else if (property.getName().equals("Fore color")) {
+            if (propName.equals("Fore color")) {
                 Color oldValue = appService.getColor();
-                Color newValue = (Color) property.getValue();
+                Color newValue = (Color) propValue;
                 if (!Objects.equals(oldValue, newValue)) {
                     cmd = new SetColorCommand(appService, oldValue, newValue);
                 }
-            } else if (property.getName().equals("X Location")) {
-                int oldValue = appService.getXLocation();
-                if (property.getValue() instanceof Integer) {
-                    int newValue = (int) property.getValue();
+            } else if (propName.equals("Fill color")) {
+                Color oldValue = appService.getFill();
+                Color newValue = (Color) propValue;
+                if (!Objects.equals(oldValue, newValue)) {
+                    cmd = new SetFillCommand(appService, oldValue, newValue);
+                }
+                // --- NEW PROPERTIES ---
+            } else if (propName.equals("Start Color")) {
+                Color oldValue = appService.getStartColor();
+                Color newValue = (Color) propValue;
+                if (!Objects.equals(oldValue, newValue)) {
+                    cmd = new SetStartColorCommand(appService, oldValue, newValue);
+                }
+            } else if (propName.equals("End Color")) {
+                Color oldValue = appService.getEndColor();
+                Color newValue = (Color) propValue;
+                if (!Objects.equals(oldValue, newValue)) {
+                    cmd = new SetEndColorCommand(appService, oldValue, newValue);
+                }
+            } else if (propName.equals("Use Gradient")) {
+                boolean oldValue = appService.isUseGradient();
+                if (propValue instanceof Boolean) {
+                    boolean newValue = (Boolean) propValue;
                     if (oldValue != newValue) {
+                        cmd = new SetUseGradientCommand(appService, oldValue, newValue);
+                    }
+                }
+            } else if (propName.equals("Visible")) {
+                boolean oldValue = appService.isVisible(); // Gets selected shape's visibility
+                if (propValue instanceof Boolean) {
+                    boolean newValue = (Boolean) propValue;
+                    // Only create command if a shape is selected
+                    if (appService.getSelectedShape() != null && oldValue != newValue) {
+                        cmd = new SetVisibleCommand(appService, oldValue, newValue);
+                    }
+                }
+                // --- END NEW PROPERTIES ---
+            } else if (propName.equals("X Location")) {
+                int oldValue = appService.getXLocation();
+                if (propValue instanceof Integer) {
+                    int newValue = (int) propValue;
+                    if (oldValue != newValue && appService.getSelectedShape() != null) { // Check if shape selected
                         int oldY = appService.getYLocation();
                         cmd = new SetPositionCommand(appService, oldValue, oldY, newValue, oldY);
                     }
                 }
-            } else if (property.getName().equals("Y Location")) {
+            } else if (propName.equals("Y Location")) {
                 int oldValue = appService.getYLocation();
-                if (property.getValue() instanceof Integer) {
-                    int newValue = (int) property.getValue();
-                    if (oldValue != newValue) {
+                if (propValue instanceof Integer) {
+                    int newValue = (int) propValue;
+                    if (oldValue != newValue && appService.getSelectedShape() != null) { // Check if shape selected
                         int oldX = appService.getXLocation();
                         cmd = new SetPositionCommand(appService, oldX, oldValue, oldX, newValue);
                     }
                 }
-            } else if (property.getName().equals("Width")) {
+            } else if (propName.equals("Width")) {
                 int oldValue = appService.getWidth();
-                if (property.getValue() instanceof Integer) {
-                    int newValue = (int) property.getValue();
-                    if (oldValue != newValue) {
+                if (propValue instanceof Integer) {
+                    int newValue = (int) propValue;
+                    if (oldValue != newValue && appService.getSelectedShape() != null) { // Check if shape selected
                         cmd = new SetWidthCommand(appService, oldValue, newValue);
                     }
                 }
-            } else if (property.getName().equals("Height")) {
+            } else if (propName.equals("Height")) {
                 int oldValue = appService.getHeight();
-                if (property.getValue() instanceof Integer) {
-                    int newValue = (int) property.getValue();
-                    if (oldValue != newValue) {
+                if (propValue instanceof Integer) {
+                    int newValue = (int) propValue;
+                    if (oldValue != newValue && appService.getSelectedShape() != null) { // Check if shape selected
                         cmd = new SetHeightCommand(appService, oldValue, newValue);
                     }
                 }
-            } else if (property.getName().equals("Line Thickness")) {
+            } else if (propName.equals("Line Thickness")) {
                 int oldValue = appService.getThickness();
-                if (property.getValue() instanceof Integer) {
-                    int newValue = (int) property.getValue();
+                if (propValue instanceof Integer) {
+                    int newValue = (int) propValue;
                     if (oldValue != newValue) {
                         cmd = new SetThicknessCommand(appService, oldValue, newValue);
                     }
                 }
-            } else if (property.getName().equals("Text")) {
+            } else if (propName.equals("Text")) {
                 String oldValue = appService.getText();
-                String newValue = (String) property.getValue();
+                String newValue = (String) propValue;
                 if (!Objects.equals(oldValue, newValue)) {
                     cmd = new SetTextCommand(appService, oldValue, (newValue != null ? newValue : ""));
                 }
-            } else if (property.getName().equals("Font size")) {
+            } else if (propName.equals("Font size")) {
                 Font oldFont = appService.getFont();
-                if (oldFont != null && property.getValue() instanceof Integer) {
+                if (oldFont != null && propValue instanceof Integer) {
                     int oldValue = oldFont.getSize();
-                    int newValue = (int) property.getValue();
+                    int newValue = (int) propValue;
                     if (oldValue != newValue) {
                         cmd = new SetFontSizeCommand(appService, oldValue, newValue, oldFont);
                     }
                 }
-            } else if (property.getName().equals("Font Family")) {
+            } else if (propName.equals("Font Family")) {
                 Font oldFont = appService.getFont();
                 if (oldFont != null) {
                     String oldValue = oldFont.getFamily();
-                    String newValue = (String) property.getValue();
+                    String newValue = (String) propValue;
                     if (!Objects.equals(oldValue, newValue)) {
                         cmd = new SetFontFamilyCommand(appService, oldFont, newValue);
                     }
                 }
-            } else if (property.getName().equals("Font Style")) {
+            } else if (propName.equals("Font Style")) {
                 Font oldFont = appService.getFont();
-                if (oldFont != null && property.getValue() instanceof Integer) {
+                if (oldFont != null && propValue instanceof Integer) {
                     int oldValue = oldFont.getStyle();
-                    int newValue = (int) property.getValue();
+                    int newValue = (int) propValue;
                     if (oldValue != newValue) {
                         cmd = new SetFontStyleCommand(appService, oldValue, newValue, oldFont);
                     }
                 }
-            } else if (property.getName().equals("Current Shape")) {
+            } else if (propName.equals("Current Shape Tool")) { // Changed name slightly
                 ShapeMode oldValue = appService.getShapeMode();
-                if (property.getValue() instanceof ShapeMode) {
-                    ShapeMode newValue = (ShapeMode) property.getValue();
+                if (propValue instanceof ShapeMode) {
+                    ShapeMode newValue = (ShapeMode) propValue;
                     if (oldValue != newValue) {
                         cmd = new SetShapeCommand(appService, oldValue, newValue);
                     }
                 }
             }
         } catch (ClassCastException e) {
-            System.err.println("PropertyEventListener: Error casting property value for '" + property.getName() + "'. Value: " + property.getValue() + ", Error: " + e.getMessage());
+            System.err.println("PropertyEventListener: Error casting property value for '" + propName + "'. Value: " + propValue + ", Error: " + e.getMessage());
+        } catch (Exception e) { // Catch other potential errors
+            System.err.println("PropertyEventListener: Unexpected error processing property '" + propName + "': " + e.getMessage());
+            e.printStackTrace();
         }
 
-        // Execute command ONLY if one was created AND we aren't already executing another command
+        // Execute command ONLY if one was created
         if (cmd != null) {
             CommandService.ExecuteCommand(cmd);
         }

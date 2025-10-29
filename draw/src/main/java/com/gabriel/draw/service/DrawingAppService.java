@@ -14,6 +14,7 @@ import lombok.Setter; // Keep if using Lombok, ensure it's configured
 import java.util.ArrayList;
 import java.util.List;
 import java.awt.*;
+import java.util.Objects; // For null-safe checks
 
 public class DrawingAppService implements AppService {
 
@@ -117,14 +118,13 @@ public class DrawingAppService implements AppService {
 
     // --- Color Properties ---
     @Override
-    public Color getColor() {
-        // Return selected shape's color if one is selected, otherwise global color
+    public Color getColor() { // Fore Color
         Shape selectedShape = getSelectedShape(); // Use helper method
         return (selectedShape != null) ? selectedShape.getColor() : drawing.getColor();
     }
 
     @Override
-    public void setColor(Color color) {
+    public void setColor(Color color) { // Fore Color
         if (color == null) return; // Prevent setting null color
 
         List<Shape> shapes = getSelectedShapes(); // Use helper
@@ -141,13 +141,13 @@ public class DrawingAppService implements AppService {
     }
 
     @Override
-    public Color getFill() {
+    public Color getFill() { // Solid Fill Color
         Shape selectedShape = getSelectedShape();
         return (selectedShape != null) ? selectedShape.getFill() : drawing.getFill();
     }
 
     @Override
-    public void setFill(Color color) {
+    public void setFill(Color color) { // Solid Fill Color
         // Allow null fill color (transparent)
         List<Shape> shapes = getSelectedShapes();
         if (!shapes.isEmpty()) {
@@ -159,6 +159,89 @@ public class DrawingAppService implements AppService {
         }
         triggerRepaint();
     }
+
+    // --- NEW Gradient Getters/Setters ---
+    @Override
+    public Color getStartColor() {
+        Shape selectedShape = getSelectedShape();
+        return (selectedShape != null) ? selectedShape.getStartColor() : drawing.getStartColor(); // Assuming Drawing also has defaults
+    }
+
+    @Override
+    public void setStartColor(Color color) {
+        if (color == null) color = Color.LIGHT_GRAY; // Use default if null
+        List<Shape> shapes = getSelectedShapes();
+        if (!shapes.isEmpty()) {
+            for (Shape shape : shapes) {
+                shape.setStartColor(color);
+            }
+        } else {
+            drawing.setStartColor(color); // Set global default
+        }
+        triggerRepaint();
+    }
+
+    @Override
+    public Color getEndColor() {
+        Shape selectedShape = getSelectedShape();
+        return (selectedShape != null) ? selectedShape.getEndColor() : drawing.getEndColor(); // Assuming Drawing also has defaults
+    }
+
+    @Override
+    public void setEndColor(Color color) {
+        if (color == null) color = Color.DARK_GRAY; // Use default if null
+        List<Shape> shapes = getSelectedShapes();
+        if (!shapes.isEmpty()) {
+            for (Shape shape : shapes) {
+                shape.setEndColor(color);
+            }
+        } else {
+            drawing.setEndColor(color); // Set global default
+        }
+        triggerRepaint();
+    }
+
+    @Override
+    public boolean isUseGradient() {
+        Shape selectedShape = getSelectedShape();
+        // If shapes have different values, what to return? Return primary shape's value for now.
+        return (selectedShape != null) ? selectedShape.isUseGradient() : drawing.isUseGradient(); // Assuming Drawing also has defaults
+    }
+
+    @Override
+    public void setUseGradient(boolean useGradient) {
+        List<Shape> shapes = getSelectedShapes();
+        if (!shapes.isEmpty()) {
+            for (Shape shape : shapes) {
+                shape.setUseGradient(useGradient);
+            }
+        } else {
+            drawing.setUseGradient(useGradient); // Set global default
+        }
+        triggerRepaint();
+    }
+
+    // --- NEW Visibility Getter/Setter ---
+    @Override
+    public boolean isVisible() {
+        Shape selectedShape = getSelectedShape();
+        // If shapes have different values, return primary shape's value.
+        return (selectedShape != null) ? selectedShape.isVisible() : true; // Default to visible if nothing selected
+    }
+
+    @Override
+    public void setVisible(boolean visible) {
+        List<Shape> shapes = getSelectedShapes();
+        if (!shapes.isEmpty()) {
+            for (Shape shape : shapes) {
+                shape.setVisible(visible);
+            }
+        }
+        // No global visibility setting usually needed
+        triggerRepaint();
+    }
+    // --- END NEW ---
+
 
     // --- Thickness Property ---
     @Override
@@ -225,12 +308,18 @@ public class DrawingAppService implements AppService {
     @Override
     public void create(Shape shape) {
         if (shape == null) return;
-        // Assign default properties if not already set? (Usually done in Controller)
-        // shape.setColor(drawing.getColor());
-        // shape.setThickness(drawing.getThickness());
-        // shape.setFill(drawing.getFill());
-        // shape.setFont(drawing.getFont());
-        // shape.setText(drawing.getText());
+        // Assign default properties from drawing context
+        shape.setColor(drawing.getColor());
+        shape.setThickness(drawing.getThickness());
+        shape.setFill(drawing.getFill());
+        shape.setStartColor(drawing.getStartColor()); // Assign defaults
+        shape.setEndColor(drawing.getEndColor());     // Assign defaults
+        shape.setUseGradient(drawing.isUseGradient()); // Assign defaults
+        shape.setVisible(true);                        // New shapes are visible
+        // Assign font/text only if not already set (e.g., by Text dialog)
+        if (shape.getFont() == null) shape.setFont(drawing.getFont());
+        if (shape.getText() == null) shape.setText(drawing.getText());
+
         shape.setR(drawing.getSearchRadius()); // Radius for handle detection
         shape.setId(this.drawing.getShapes().size() + 1); // Simple ID generation (consider UUID?)
         this.drawing.getShapes().add(shape);
@@ -280,6 +369,7 @@ public class DrawingAppService implements AppService {
         if (newDrawing != null) {
             drawing.getShapes().clear();
             drawing.getShapes().addAll(newDrawing.getShapes());
+            // Copy relevant properties from the loaded drawing model
             drawing.setColor(newDrawing.getColor());
             drawing.setFill(newDrawing.getFill());
             drawing.setThickness(newDrawing.getThickness());
@@ -287,6 +377,11 @@ public class DrawingAppService implements AppService {
             drawing.setText(newDrawing.getText());
             drawing.setFilename(newDrawing.getFilename());
             drawing.setImageFilename(newDrawing.getImageFilename());
+            drawing.setStartColor(newDrawing.getStartColor());
+            drawing.setEndColor(newDrawing.getEndColor());
+            drawing.setUseGradient(newDrawing.isUseGradient());
+            // Note: 'visible' is typically a shape property, not a drawing-wide default
+
             // Reset selection and modes
             clearSelections();
             drawing.setSelectedShape(null);
@@ -463,7 +558,8 @@ public class DrawingAppService implements AppService {
     public void setXLocation(int xLocation) {
         Shape selectedShape = getSelectedShape(); // Only affects primary selected shape
         if (selectedShape != null) {
-            selectedShape.getLocation().x = xLocation;
+            // Avoid modifying point directly if multiple shapes might share it
+            selectedShape.setLocation(new Point(xLocation, selectedShape.getLocation().y));
             triggerRepaint();
         }
     }
@@ -472,14 +568,14 @@ public class DrawingAppService implements AppService {
     public int getXLocation() {
         Shape selectedShape = getSelectedShape();
         // Return 0 or some default if nothing selected?
-        return (selectedShape != null) ? selectedShape.getLocation().x : 0; // drawing.getLocation().x for global?
+        return (selectedShape != null && selectedShape.getLocation() != null) ? selectedShape.getLocation().x : 0;
     }
 
     @Override
     public void setYLocation(int yLocation) {
         Shape selectedShape = getSelectedShape();
         if (selectedShape != null) {
-            selectedShape.getLocation().y = yLocation;
+            selectedShape.setLocation(new Point(selectedShape.getLocation().x, yLocation));
             triggerRepaint();
         }
     }
@@ -487,7 +583,7 @@ public class DrawingAppService implements AppService {
     @Override
     public int getYLocation() {
         Shape selectedShape = getSelectedShape();
-        return (selectedShape != null) ? selectedShape.getLocation().y : 0;
+        return (selectedShape != null && selectedShape.getLocation() != null) ? selectedShape.getLocation().y : 0;
     }
 
     // --- Dimension Properties ---
@@ -538,12 +634,16 @@ public class DrawingAppService implements AppService {
     @Override
     public void setImageFileename(String filename) {
         // Directly sets the filename (e.g., when loading or potentially undoing)
+        // Apply to selected shape IF it's a Picture? Or global? Assuming global for now.
         drawing.setImageFilename(filename);
+        // Find selected Picture shapes and update them? Need Picture class knowledge here.
         triggerRepaint(); // Repaint potentially affected image shapes
     }
 
     @Override
     public String getImageFileename() {
+        Shape selectedShape = getSelectedShape();
+        // Check if selected is Picture and return its filename? Or global? Return global for consistency.
         return drawing.getImageFilename();
     }
 
@@ -563,9 +663,10 @@ public class DrawingAppService implements AppService {
             // Apply to all selected (relevant for Text shapes)
             for (Shape shape : shapes) {
                 // Check if shape is capable of having text? (e.g., instanceof Text)
-                // if (shape instanceof com.gabriel.draw.model.Text) { // Assuming Text class path
-                shape.setText(text);
-                // }
+                // Use class name check as workaround:
+                if (Objects.equals(shape.getClass().getSimpleName(), "Text")) {
+                    shape.setText(text);
+                }
             }
         } else {
             // Set global default
@@ -578,7 +679,8 @@ public class DrawingAppService implements AppService {
     public Font getFont() {
         Shape selectedShape = getSelectedShape();
         // Return shape's font or global default
-        return (selectedShape != null && selectedShape.getFont() != null) ? selectedShape.getFont() : drawing.getFont();
+        Font font = (selectedShape != null) ? selectedShape.getFont() : null;
+        return (font != null) ? font : drawing.getFont();
     }
 
     // --- Font Component Setters ---
@@ -588,15 +690,18 @@ public class DrawingAppService implements AppService {
     public void setFontSize(int fontSize) {
         if (fontSize < 1) fontSize = 1; // Basic validation
         Font currentFont = getFont(); // Get current font (selected or global)
+        if (currentFont == null) return; // Cannot modify if no base font
         Font newFont = new Font(currentFont.getFamily(), currentFont.getStyle(), fontSize);
 
         List<Shape> shapes = getSelectedShapes();
         if (!shapes.isEmpty()) {
             for (Shape shape : shapes) {
-                // if (shape instanceof com.gabriel.draw.model.Text) { // Apply only to text shapes?
-                Font shapeFont = shape.getFont() != null ? shape.getFont() : drawing.getFont(); // Use shape font or global default
-                shape.setFont(new Font(shapeFont.getFamily(), shapeFont.getStyle(), fontSize));
-                // }
+                if (Objects.equals(shape.getClass().getSimpleName(), "Text")) {
+                    Font shapeFont = shape.getFont() != null ? shape.getFont() : drawing.getFont(); // Use shape font or global default
+                    if (shapeFont != null) {
+                        shape.setFont(new Font(shapeFont.getFamily(), shapeFont.getStyle(), fontSize));
+                    }
+                }
             }
         } else {
             drawing.setFont(newFont); // Update global font
@@ -608,15 +713,18 @@ public class DrawingAppService implements AppService {
     public void setFontFamily(String family) {
         if (family == null || family.isEmpty()) return; // Validation
         Font currentFont = getFont();
+        if (currentFont == null) return;
         Font newFont = new Font(family, currentFont.getStyle(), currentFont.getSize());
 
         List<Shape> shapes = getSelectedShapes();
         if (!shapes.isEmpty()) {
             for (Shape shape : shapes) {
-                // if (shape instanceof com.gabriel.draw.model.Text) {
-                Font shapeFont = shape.getFont() != null ? shape.getFont() : drawing.getFont();
-                shape.setFont(new Font(family, shapeFont.getStyle(), shapeFont.getSize()));
-                // }
+                if (Objects.equals(shape.getClass().getSimpleName(), "Text")) {
+                    Font shapeFont = shape.getFont() != null ? shape.getFont() : drawing.getFont();
+                    if (shapeFont != null) {
+                        shape.setFont(new Font(family, shapeFont.getStyle(), shapeFont.getSize()));
+                    }
+                }
             }
         } else {
             drawing.setFont(newFont);
@@ -628,15 +736,18 @@ public class DrawingAppService implements AppService {
     public void setFontStyle(int style) {
         // Basic validation for style bits might be needed
         Font currentFont = getFont();
+        if (currentFont == null) return;
         Font newFont = new Font(currentFont.getFamily(), style, currentFont.getSize());
 
         List<Shape> shapes = getSelectedShapes();
         if (!shapes.isEmpty()) {
             for (Shape shape : shapes) {
-                // if (shape instanceof com.gabriel.draw.model.Text) {
-                Font shapeFont = shape.getFont() != null ? shape.getFont() : drawing.getFont();
-                shape.setFont(new Font(shapeFont.getFamily(), style, shapeFont.getSize()));
-                // }
+                if (Objects.equals(shape.getClass().getSimpleName(), "Text")) {
+                    Font shapeFont = shape.getFont() != null ? shape.getFont() : drawing.getFont();
+                    if (shapeFont != null) {
+                        shape.setFont(new Font(shapeFont.getFamily(), style, shapeFont.getSize()));
+                    }
+                }
             }
         } else {
             drawing.setFont(newFont);

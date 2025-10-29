@@ -20,9 +20,9 @@ public class Splash extends JPanel implements MouseListener {
     private boolean fadingOut = true;
 
     public Splash() {
-        // Load images using resource streams
-        backgroundImage = loadImageResource("/com/gabriel/draw/view/1.png"); // Use correct path
-        tapTextImage = loadImageResource("/com/gabriel/draw/view/2.png"); // Use correct path
+        // Load images using resource streams with the CORRECTED path
+        backgroundImage = loadImageResource("/com/gabriel/draw/view/images/1.png"); // Added /images
+        tapTextImage = loadImageResource("/com/gabriel/draw/view/images/2.png");    // Added /images
 
         // Fallback if images fail to load
         if (backgroundImage == null) {
@@ -53,6 +53,11 @@ public class Splash extends JPanel implements MouseListener {
             return ImageIO.read(is);
         } catch (IOException e) {
             System.err.println("Error loading image resource " + path + ": " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        } catch (IllegalArgumentException e) {
+            System.err.println("Error reading image resource " + path + ": " + e.getMessage());
+            // This can happen if the path is correct but the image format is wrong or corrupted
             e.printStackTrace();
             return null;
         }
@@ -129,21 +134,53 @@ public class Splash extends JPanel implements MouseListener {
                 drawY = 0;
                 drawX = (width - drawWidth) / 2; // Center horizontally
             }
-            g2d.drawImage(backgroundImage, drawX, drawY, drawWidth, drawHeight, this);
+            try {
+                g2d.drawImage(backgroundImage, drawX, drawY, drawWidth, drawHeight, this);
+            } catch (Exception e) {
+                System.err.println("Error drawing background image: " + e.getMessage());
+                // Draw fallback background if drawing fails
+                g2d.setColor(Color.DARK_GRAY);
+                g2d.fillRect(0,0, width, height);
+                g2d.setColor(Color.WHITE);
+                g2d.drawString("Error loading background", 50, 50);
+            }
+        } else {
+            // Draw fallback background if image is null
+            g2d.setColor(Color.DARK_GRAY);
+            g2d.fillRect(0,0, width, height);
+            g2d.setColor(Color.WHITE);
+            g2d.drawString("Background image not loaded", 50, 50);
         }
 
-        // Draw animated "Tap Anywhere to Draw!" text image
+        // Draw animated "Tap Anywhere to Draw!" text image (2.png) as a smaller button on the right
         if (tapTextImage != null) {
-            // Adjust size and position as needed
-            int textImgWidth = tapTextImage.getWidth() / 2; // Make it smaller
-            int textImgHeight = tapTextImage.getHeight() / 2;
-            int textX = width - textImgWidth - (width / 10); // Position on the right-middle
-            int textY = (height - textImgHeight) / 2;
+            // --- MODIFICATIONS START ---
+
+            // Make it smaller (e.g., scale width to 1/4 of original, maintain aspect ratio)
+            double scaleFactor = 0.15; // Adjust this scale factor as needed (0.25 = 1/4 size)
+            int textImgWidth = (int)(tapTextImage.getWidth() * scaleFactor);
+            int textImgHeight = (int)(tapTextImage.getHeight() * scaleFactor);
+
+            // Position it further to the right and centered vertically
+            int rightMargin = 70; // Pixels from the right edge
+            int textX = width - textImgWidth - rightMargin; // Position near the right edge
+            int textY = (height - textImgHeight) / 2; // Center vertically
+
+            // --- MODIFICATIONS END ---
+
 
             // Apply fading effect
             g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, textAlpha));
-            g2d.drawImage(tapTextImage, textX, textY, textImgWidth, textImgHeight, this);
+            try {
+                g2d.drawImage(tapTextImage, textX, textY, textImgWidth, textImgHeight, this);
+            } catch (Exception e) {
+                System.err.println("Error drawing tap text image: " + e.getMessage());
+            }
             g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); // Reset alpha
+        } else {
+            // Draw fallback text if image is null
+            g2d.setColor(Color.YELLOW);
+            g2d.drawString("Tap to start (image error)", width - 200, height /2 );
         }
     }
 
@@ -153,13 +190,12 @@ public class Splash extends JPanel implements MouseListener {
         launchMainApplication();
     }
 
-    // --- Unused MouseListener / MouseMotionListener methods ---
+    // --- Unused MouseListener methods ---
     @Override public void mousePressed(MouseEvent e) {}
     @Override public void mouseReleased(MouseEvent e) {} // Click handled in mouseClicked
     @Override public void mouseEntered(MouseEvent e) {}
     @Override public void mouseExited(MouseEvent e) {}
-    // @Override public void mouseDragged(MouseEvent e) {} // Removed MouseMotionListener
-    // @Override public void mouseMoved(MouseEvent e) {} // Removed MouseMotionListener
+
 
     private void launchMainApplication() {
         if (animationTimer != null && animationTimer.isRunning()) {

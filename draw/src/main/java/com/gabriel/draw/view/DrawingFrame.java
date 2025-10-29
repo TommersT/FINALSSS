@@ -28,21 +28,21 @@ public class DrawingFrame extends JFrame {
     DrawingToolBar drawingToolBar;
     DrawingView drawingView; // Made accessible for listener update
     DrawingController drawingController;
-    JScrollPane jScrollPane;
+    JScrollPane drawingScrollPane; // Renamed for clarity
     DrawingStatusPanel drawingStatusPanel;
     DrawingWindowController drawingWindowController;
+    JScrollPane propertyScrollPane; // Keep reference
 
     public DrawingFrame() {
         setTitle("GoDraw Application");
 
         // --- Model and Service Initialization ---
-        // Service manages its own drawing instance now
         drawingAppService = new DrawingAppService();
         appService = DrawingCommandAppService.getInstance(drawingAppService);
 
         // --- Basic Frame Setup ---
         pane = getContentPane();
-        setLayout(new BorderLayout(5, 5));
+        setLayout(new BorderLayout(5, 5)); // Use BorderLayout
 
         // --- Controller Initialization ---
         actionListener = new ActionController(appService);
@@ -62,9 +62,12 @@ public class DrawingFrame extends JFrame {
         drawingController.setDrawingView(drawingView);     // Link Controller -> View
 
         drawingView.setPreferredSize(new Dimension(2000, 1500)); // Canvas size
-        jScrollPane = new JScrollPane(drawingView);
-        jScrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        jScrollPane.getHorizontalScrollBar().setUnitIncrement(16);
+        drawingScrollPane = new JScrollPane(drawingView); // Use new name
+        drawingScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        drawingScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        drawingScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        drawingScrollPane.getHorizontalScrollBar().setUnitIncrement(16);
+
 
         drawingStatusPanel = new DrawingStatusPanel();
         drawingController.setDrawingStatusPanel(drawingStatusPanel); // Link Controller -> StatusPanel
@@ -72,73 +75,70 @@ public class DrawingFrame extends JFrame {
         // --- Property Sheet Initialization ---
         buildPropertyTable(); // Creates and sets 'propertySheet' field
         drawingController.setPropertySheet(propertySheet); // Link Controller -> PropertySheet
-        JScrollPane propertyScrollPane = new JScrollPane(propertySheet);
-        propertyScrollPane.setPreferredSize(new Dimension(250, 0)); // Width for property sheet
+        propertyScrollPane = new JScrollPane(propertySheet); // Assign to field
+        propertyScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        // --- FIX: Set a fixed preferred width and let height be flexible ---
+        // Give it a definite preferred size that BorderLayout can work with initially.
+        // Height will still be determined by BorderLayout in the EAST position.
+        propertyScrollPane.setPreferredSize(new Dimension(250, 400)); // Set width and a reasonable initial height
+        propertyScrollPane.setMinimumSize(new Dimension(150, 100)); // Prevent it from becoming too small
+        // --- END FIX ---
 
 
         // --- Layout Components ---
         pane.add(drawingToolBar, BorderLayout.NORTH);
-        pane.add(jScrollPane, BorderLayout.CENTER);
+        pane.add(drawingScrollPane, BorderLayout.CENTER); // Use new name
         pane.add(propertyScrollPane, BorderLayout.EAST);
         pane.add(drawingStatusPanel, BorderLayout.SOUTH);
 
         // --- Link Services and Listeners ---
-        drawingAppService.setDrawingView(drawingView); // Link base service -> View (needed for triggerRepaint)
-        actionListener.setComponent(drawingView); // Parent component for dialogs
-        actionListener.setFrame(this); // Frame reference
+        drawingAppService.setDrawingView(drawingView);
+        actionListener.setComponent(drawingView);
+        actionListener.setFrame(this);
 
         // Window Listeners
         this.addWindowListener(drawingWindowController);
         this.addWindowFocusListener(drawingWindowController);
         this.addWindowStateListener(drawingWindowController);
 
-        // Command Service Listener for Undo/Redo button state AND UI Updates
+        // Command Service Listener
         CommandService.addListener((canUndo, canRedo) -> {
-            // Update buttons and menu items state
-            if (drawingToolBar != null) {
-                drawingToolBar.updateUndoRedoState(canUndo, canRedo);
-            }
-            if (drawingMenuBar != null) {
-                drawingMenuBar.updateUndoRedoState(canUndo, canRedo);
-            }
-
-            // *** CRUCIAL: Update Property Sheet after Undo/Redo ***
-            if (propertySheet != null) {
-                // Populate based on the current model state AFTER undo/redo finished
-                // Ensure this runs on the Event Dispatch Thread (EDT) for safety
-                SwingUtilities.invokeLater(() -> propertySheet.populateTable(appService));
-            }
-
-            // *** CRUCIAL: REPAINT the view after Undo/Redo ***
-            // Ensures selection handles, shape positions/colors, etc., are correct
-            if (drawingView != null) {
-                // Ensure repaint also runs on the EDT
-                SwingUtilities.invokeLater(() -> drawingView.repaint());
-            }
+            if (drawingToolBar != null) drawingToolBar.updateUndoRedoState(canUndo, canRedo);
+            if (drawingMenuBar != null) drawingMenuBar.updateUndoRedoState(canUndo, canRedo);
+            if (propertySheet != null) SwingUtilities.invokeLater(() -> propertySheet.populateTable(appService));
+            if (drawingView != null) SwingUtilities.invokeLater(() -> drawingView.repaint());
         });
 
         // --- Final Frame Configuration ---
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        pack(); // Adjust frame size to fit components
-        setMinimumSize(new Dimension(600, 400));
+        setSize(1024, 768); // Set a good default size
+        setMinimumSize(new Dimension(800, 600)); // Increase minimum size
         setLocationRelativeTo(null); // Center on screen
-        // setVisible(true); // Should be done by Main or Splash screen
+
+        // --- Ensure Layout is Validated ---
+        pane.revalidate(); // Re-calculate layout
+        pane.repaint(); // Redraw
+        // --- END Ensure ---
+
 
         // Set initial tool after setup is complete
-        drawingToolBar.setActiveTool(com.gabriel.drawfx.ActionCommand.SELECT);
-        appService.setToolMode(com.gabriel.drawfx.ToolMode.SELECT); // Sync service state
-        drawingController.updateStatusBarTool("Select"); // Update status bar text
+        if (drawingToolBar != null) {
+            drawingToolBar.setActiveTool(com.gabriel.drawfx.ActionCommand.SELECT);
+        }
+        appService.setToolMode(com.gabriel.drawfx.ToolMode.SELECT);
+        drawingController.updateStatusBarTool("Select");
     }
 
     // Helper to build and configure the property sheet
     void buildPropertyTable() {
         PropertyOptions options = new PropertyOptions.Builder()
-                // Add any custom options here if needed
                 .build();
         propertySheet = new PropertySheet(options);
-        // Link the listener that creates commands when properties are edited *in the sheet*
+        // --- FIX: Ensure table has a minimum size ---
+        propertySheet.setMinimumSize(new Dimension(150, 300)); // Prevent table itself from collapsing
+        // --- END FIX ---
         propertySheet.addEventListener(new PropertyEventListener(appService));
-        // Initial population (shows global properties or empty if nothing selected)
         propertySheet.populateTable(appService);
     }
 
@@ -160,7 +160,8 @@ public class DrawingFrame extends JFrame {
         // Run GUI on the Event Dispatch Thread
         SwingUtilities.invokeLater(() -> {
             DrawingFrame frame = new DrawingFrame();
-            frame.setVisible(true);
+            frame.setVisible(true); // Make visible here for testing
         });
     }
 }
+

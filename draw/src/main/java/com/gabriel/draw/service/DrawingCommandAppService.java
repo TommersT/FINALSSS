@@ -1,12 +1,11 @@
-// tommerst/finalsss/FINALSSS-4b53253892a92ed882030feb653ef76e91b6ab5b/draw/src/main/java/com/gabriel/draw/service/DrawingCommandAppService.java
 package com.gabriel.draw.service;
 
-// FIX: Add missing import if needed, though SetDrawModeCommand is removed now
-// import com.gabriel.draw.command.SetDrawModeCommand;
+// Commands...
 import com.gabriel.draw.command.AddShapeCommand;
 import com.gabriel.draw.command.MoveCommand;
 import com.gabriel.draw.command.ScaleCommand;
 import com.gabriel.draw.command.DeleteShapeCommand;
+// drawfx imports...
 import com.gabriel.drawfx.DrawMode;
 import com.gabriel.drawfx.ShapeMode;
 import com.gabriel.drawfx.ToolMode;
@@ -16,42 +15,36 @@ import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.AppService;
 
-// Removed unused Swing import
-import java.awt.*; // Keep AWT for Color, Point, Font
+// AWT imports...
+import java.awt.*;
 import java.util.List;
 
 public class DrawingCommandAppService implements AppService {
-    // FIX: Make the wrapped service private final for better encapsulation
-    private final AppService appService;
-    // FIX: Static instance management can be tricky. Consider dependency injection instead.
-    // For now, keep the Singleton pattern but ensure it's initialized correctly.
-    protected static DrawingCommandAppService drawingCommandAppService = null;
+    private final AppService appService; // Wrapped service (final)
+    protected static DrawingCommandAppService drawingCommandAppService = null; // Singleton instance
 
-    // FIX: Constructor should be private for Singleton
+    // Private constructor for Singleton
     private DrawingCommandAppService(AppService appService){
         this.appService = appService;
     }
 
-    // FIX: Standard Singleton getInstance method - lazy initialization
+    // Singleton getInstance method
     public static AppService getInstance(AppService underlyingService){
         if(drawingCommandAppService == null){
-            // Ensure the underlying service is not null
             if (underlyingService == null) {
                 throw new IllegalArgumentException("Underlying AppService cannot be null for Singleton initialization.");
             }
             drawingCommandAppService = new DrawingCommandAppService(underlyingService);
         }
-        // Optional: Check if the provided service matches the one used for initialization if called multiple times?
-        // else if (drawingCommandAppService.appService != underlyingService) {
-        //    // Handle mismatch? Log warning? Throw exception? Re-initialize?
-        // }
         return drawingCommandAppService;
     }
 
+    // Method to get the base service (used by commands)
     public AppService getUnderlyingAppService() {
         return appService;
     }
 
+    // --- Undo/Redo ---
     @Override
     public void undo() {
         CommandService.undo();
@@ -62,6 +55,7 @@ public class DrawingCommandAppService implements AppService {
         CommandService.redo();
     }
 
+    // --- Mode Getters/Setters ---
     @Override
     public ShapeMode getShapeMode() {
         return appService.getShapeMode();
@@ -69,7 +63,7 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setShapeMode(ShapeMode shapeMode) {
-        // ActionController or PropertyEventListener should create the command
+        // Command created elsewhere (PropertyEventListener/ActionController)
         appService.setShapeMode(shapeMode);
     }
 
@@ -80,7 +74,7 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setToolMode(ToolMode toolMode) {
-        // Direct state change, not typically undone itself
+        // Direct state change, not typically command-based
         appService.setToolMode(toolMode);
     }
 
@@ -91,39 +85,80 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setDrawMode(DrawMode drawMode) {
-        // **** CHANGE ****
-        // Directly call the underlying service. DrawMode changes during
-        // operations like dragging aren't usually user-initiated undoable actions.
-        // Command command = new SetDrawModeCommand(appService, drawMode);
-        // CommandService.ExecuteCommand(command);
-        appService.setDrawMode(drawMode); // Call directly
-        // **** END CHANGE ****
+        // Direct state change during drag etc., not command-based
+        appService.setDrawMode(drawMode);
     }
 
-    // ... (Rest of the methods remain the same as the previous version) ...
-
+    // --- Color Properties ---
     @Override
-    public Color getColor() {
+    public Color getColor() { // Fore Color
         return appService.getColor();
     }
 
     @Override
-    public void setColor(Color color) {
-        // Command is created by PropertyEventListener or ActionController
+    public void setColor(Color color) { // Fore Color
+        // Command created by listener
         appService.setColor(color);
     }
 
     @Override
-    public Color getFill() {
+    public Color getFill() { // Solid Fill
         return appService.getFill();
     }
 
     @Override
-    public void setFill(Color color) {
-        // Command is created by PropertyEventListener or ActionController
+    public void setFill(Color color) { // Solid Fill
+        // Command created by listener
         appService.setFill(color);
     }
 
+    // --- Gradient Properties ---
+    @Override
+    public Color getStartColor() {
+        return appService.getStartColor();
+    }
+
+    @Override
+    public void setStartColor(Color color) {
+        // Command created by listener
+        appService.setStartColor(color);
+    }
+
+    @Override
+    public Color getEndColor() {
+        return appService.getEndColor();
+    }
+
+    @Override
+    public void setEndColor(Color color) {
+        // Command created by listener
+        appService.setEndColor(color);
+    }
+
+    @Override
+    public boolean isUseGradient() {
+        return appService.isUseGradient();
+    }
+
+    @Override
+    public void setUseGradient(boolean useGradient) {
+        // Command created by listener
+        appService.setUseGradient(useGradient);
+    }
+
+    // --- Visibility Property ---
+    @Override
+    public boolean isVisible() {
+        return appService.isVisible();
+    }
+
+    @Override
+    public void setVisible(boolean visible) {
+        // Command created by listener
+        appService.setVisible(visible);
+    }
+
+    // --- Movement ---
     @Override
     public void move(Shape shape, Point start, Point end) {
         // Preview move - call underlying directly
@@ -133,14 +168,13 @@ public class DrawingCommandAppService implements AppService {
     @Override
     public void move(Point start, Point end) {
         // Final move - create command
-        if (!appService.getSelectedShapes().isEmpty()) {
+        if (!appService.getSelectedShapes().isEmpty() && !start.equals(end)) { // Check if move occurred
             Command command = new MoveCommand(this, start, end); // Pass 'this' (the wrapped service)
             CommandService.ExecuteCommand(command);
-        } else {
-            // If nothing selected, do nothing for now
         }
     }
 
+    // --- Scaling ---
     @Override
     public void scale(Point start, Point end) {
         // Scales the entire drawing? Unlikely use case.
@@ -150,8 +184,10 @@ public class DrawingCommandAppService implements AppService {
     @Override
     public void scale(Shape shape, Point start, Point end) {
         // Final scale - create command
-        Command command = new ScaleCommand(this, shape, start, end); // Pass 'this'
-        CommandService.ExecuteCommand(command);
+        if (shape != null && !start.equals(end)) { // Check if scale occurred
+            Command command = new ScaleCommand(this, shape, start, end); // Pass 'this'
+            CommandService.ExecuteCommand(command);
+        }
     }
 
     @Override
@@ -160,6 +196,7 @@ public class DrawingCommandAppService implements AppService {
         appService.scale(shape, end);
     }
 
+    // --- Shape Lifecycle ---
     @Override
     public void create(Shape shape) {
         // Final creation - create command
@@ -180,6 +217,7 @@ public class DrawingCommandAppService implements AppService {
         CommandService.ExecuteCommand(command);
     }
 
+    // --- Application Lifecycle & File Ops ---
     @Override
     public void close() {
         appService.close();
@@ -192,8 +230,8 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setDrawing(Drawing drawing) {
-        // Replacing the entire drawing model usually clears undo/redo history.
-        CommandService.clear(); // Clear stacks when loading/new drawing
+        // Replacing the model clears history
+        CommandService.clear();
         appService.setDrawing(drawing);
     }
 
@@ -220,25 +258,22 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void open(String filename) {
-        // Clear history before opening
         CommandService.clear();
         appService.open(filename);
     }
 
-
     @Override
     public void save() {
-        appService.save(); // Save is not typically undoable
+        appService.save(); // Not undoable
     }
 
     @Override
     public void saveas(String filename) {
-        appService.saveas(filename); // Save As is not typically undoable
+        appService.saveas(filename); // Not undoable
     }
 
     @Override
     public void newDrawing() {
-        // Clear history for new drawing
         CommandService.clear();
         appService.newDrawing();
     }
@@ -248,9 +283,9 @@ public class DrawingCommandAppService implements AppService {
         return appService.getFileName();
     }
 
+    // --- Selection Management ---
     @Override
     public void select(Shape selectedShape) {
-        // Selection - direct call
         appService.select(selectedShape);
     }
 
@@ -274,9 +309,7 @@ public class DrawingCommandAppService implements AppService {
         appService.clearSelections();
     }
 
-    // --- Property Setters ---
-    // These are wrapped by PropertyEventListener which creates commands
-
+    // --- Property Setters (Wrapped by Listener) ---
     @Override
     public void setThickness(int thickness) {
         appService.setThickness(thickness);
@@ -372,9 +405,7 @@ public class DrawingCommandAppService implements AppService {
         appService.setFontStyle(style);
     }
 
-    // --- Arrangement Methods ---
-    // These need commands implemented eventually
-
+    // --- Arrangement Methods (Need Commands) ---
     @Override
     public void bringToFront(Shape shape) {
         // TODO: Implement BringToFrontCommand
