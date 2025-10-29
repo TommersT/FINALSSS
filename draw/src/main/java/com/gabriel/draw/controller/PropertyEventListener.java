@@ -2,33 +2,38 @@ package com.gabriel.draw.controller;
 
 
 import com.gabriel.draw.command.*; // Import all commands
-import com.gabriel.draw.component.PropertySheet; // <<<--- ADDED IMPORT
+import com.gabriel.draw.component.PropertySheet; // Import PropertySheet
 import com.gabriel.drawfx.command.CommandService; // Import CommandService
 import com.gabriel.property.event.PropertyEventAdapter;
 import com.gabriel.property.property.Property;
 import com.gabriel.drawfx.service.AppService;
 import com.gabriel.drawfx.command.Command; // Import Command interface
 
-import javax.swing.*; // <<<--- ADDED IMPORT
+import javax.swing.*; // Import SwingUtilities
 import java.awt.Color;
 import java.awt.Font;
 import java.util.Objects; // Import Objects for null-safe equals
 
 public class PropertyEventListener extends PropertyEventAdapter {
     private AppService appService; // This should be the command-wrapped service
-    private PropertySheet propertySheet; // <<<--- ADDED reference
+    private PropertySheet propertySheet; // Reference to the sheet
 
-    // <<<--- MODIFIED CONSTRUCTOR --->>>
+    // Constructor updated to accept PropertySheet
     public PropertyEventListener(AppService appService, PropertySheet propertySheet) {
         this.appService = appService;
         this.propertySheet = propertySheet; // Store the reference
     }
 
+    // Getter for AppService (used by PropertySheet actions)
+    public AppService getAppService() {
+        return appService;
+    }
+
+
     @Override
     public void onPropertyUpdated(Property property) {
 
-        // *** Prevent updates triggered BY command execution/undo/redo OR internal controller updates ***
-        // <<<--- MODIFIED CHECK --->>>
+        // Prevent updates triggered BY command execution/undo/redo OR internal controller updates
         if (CommandService.isExecutingCommand() || (propertySheet != null && propertySheet.isUpdatingFromController())) {
             return; // Exit early to prevent feedback loops
         }
@@ -43,25 +48,25 @@ public class PropertyEventListener extends PropertyEventAdapter {
             // Colors
             if (propName.equals("Fore Color")) {
                 Color oldValue = appService.getColor();
-                Color newValue = (Color) propValue;
+                Color newValue = (propValue instanceof Color) ? (Color) propValue : oldValue; // Safe cast
                 if (!Objects.equals(oldValue, newValue)) {
                     cmd = new SetColorCommand(appService, oldValue, newValue);
                 }
             } else if (propName.equals("Fill Color")) {
                 Color oldValue = appService.getFill();
-                Color newValue = (Color) propValue;
+                Color newValue = (propValue instanceof Color) ? (Color) propValue : oldValue; // Safe cast
                 if (!Objects.equals(oldValue, newValue)) {
                     cmd = new SetFillCommand(appService, oldValue, newValue);
                 }
             } else if (propName.equals("Start Color")) {
                 Color oldValue = appService.getStartColor();
-                Color newValue = (Color) propValue;
+                Color newValue = (propValue instanceof Color) ? (Color) propValue : oldValue; // Safe cast
                 if (!Objects.equals(oldValue, newValue)) {
                     cmd = new SetStartColorCommand(appService, oldValue, newValue);
                 }
             } else if (propName.equals("End Color")) {
                 Color oldValue = appService.getEndColor();
-                Color newValue = (Color) propValue;
+                Color newValue = (propValue instanceof Color) ? (Color) propValue : oldValue; // Safe cast
                 if (!Objects.equals(oldValue, newValue)) {
                     cmd = new SetEndColorCommand(appService, oldValue, newValue);
                 }
@@ -85,7 +90,7 @@ public class PropertyEventListener extends PropertyEventAdapter {
                     }
                 }
             }
-            // Position/Size - VERIFY THIS LOGIC
+            // Position/Size
             else if (propName.equals("X Location")) {
                 int oldValue = appService.getXLocation();
                 if (propValue instanceof Integer) {
@@ -132,33 +137,37 @@ public class PropertyEventListener extends PropertyEventAdapter {
                     }
                 }
             }
-            // Text/Font
+            // Text/Font (*** FIXES FONT HANDLING ***)
             else if (propName.equals("Text")) {
-                String oldValue = appService.getText();
-                String newValue = (String) propValue;
-                if (!Objects.equals(oldValue, newValue)) {
-                    // Ensure command is created only if a text shape is selected or no shape is selected (global default)
-                    if (appService.getSelectedShape() == null || "Text".equals(appService.getSelectedShape().getClass().getSimpleName())) {
-                        cmd = new SetTextCommand(appService, oldValue, (newValue != null ? newValue : ""));
-                    }
+                String oldValue = appService.getText(); // Gets selected or global
+                String newValue = (propValue instanceof String) ? (String) propValue : oldValue; // Safe cast
+                // Allow change if selected is Text OR nothing is selected (global default)
+                if (!Objects.equals(oldValue, newValue) &&
+                        (appService.getSelectedShape() == null || "Text".equals(appService.getSelectedShape().getClass().getSimpleName())))
+                {
+                    cmd = new SetTextCommand(appService, oldValue, (newValue != null ? newValue : ""));
                 }
             } else if (propName.equals("Font Size")) {
-                Font oldFont = appService.getFont(); // Get context
+                Font oldFont = appService.getFont(); // Get context (selected or global)
                 if (oldFont != null && propValue instanceof Integer) {
                     int oldValue = oldFont.getSize();
                     int newValue = (int) propValue;
-                    if (oldValue != newValue && (appService.getSelectedShape() == null || "Text".equals(appService.getSelectedShape().getClass().getSimpleName()))) {
-                        // Pass oldFont context to command
+                    // Allow change if selected is Text OR nothing is selected
+                    if (oldValue != newValue &&
+                            (appService.getSelectedShape() == null || "Text".equals(appService.getSelectedShape().getClass().getSimpleName())))
+                    {
                         cmd = new SetFontSizeCommand(appService, oldValue, newValue, oldFont);
                     }
                 }
             } else if (propName.equals("Font Family")) {
                 Font oldFont = appService.getFont(); // Get context
-                if (oldFont != null) {
+                if (oldFont != null && propValue instanceof String) { // Value from StringProperty
                     String oldValue = oldFont.getFamily();
                     String newValue = (String) propValue;
-                    if (!Objects.equals(oldValue, newValue) && (appService.getSelectedShape() == null || "Text".equals(appService.getSelectedShape().getClass().getSimpleName()))) {
-                        // Pass oldFont context to command
+                    // Allow change if selected is Text OR nothing is selected
+                    if (!Objects.equals(oldValue, newValue) &&
+                            (appService.getSelectedShape() == null || "Text".equals(appService.getSelectedShape().getClass().getSimpleName())))
+                    {
                         cmd = new SetFontFamilyCommand(appService, oldFont, newValue);
                     }
                 }
@@ -168,17 +177,20 @@ public class PropertyEventListener extends PropertyEventAdapter {
                 if (oldFont != null && propValue instanceof Integer) {
                     int oldValue = oldFont.getStyle();
                     int newValue = (int) propValue;
-                    if (oldValue != newValue && (appService.getSelectedShape() == null || "Text".equals(appService.getSelectedShape().getClass().getSimpleName()))) {
-                        // Pass oldFont context to command
+                    // Allow change if selected is Text OR nothing is selected
+                    if (oldValue != newValue &&
+                            (appService.getSelectedShape() == null || "Text".equals(appService.getSelectedShape().getClass().getSimpleName())))
+                    {
                         cmd = new SetFontStyleCommand(appService, oldValue, newValue, oldFont);
                     }
                 }
             }
             // Ignore "Object Type" as it's read-only
-            // Add handlers for any other editable properties you have
+            // Ignore "Image" and "Image Action" as they trigger actions directly
 
         } catch (ClassCastException e) {
             System.err.println("PropertyEventListener: Error casting property value for '" + propName + "'. Value: " + propValue + ", Error: " + e.getMessage());
+            e.printStackTrace(); // Print stack trace for debugging
         } catch (Exception e) { // Catch other potential errors
             System.err.println("PropertyEventListener: Unexpected error processing property '" + propName + "': " + e.getMessage());
             e.printStackTrace();
@@ -193,6 +205,8 @@ public class PropertyEventListener extends PropertyEventAdapter {
             } else {
                 SwingUtilities.invokeLater(() -> CommandService.ExecuteCommand(finalCmd));
             }
+        } else {
+            // System.out.println("PropertyEventListener: No command created for update of '" + propName + "' (Value unchanged or condition not met).");
         }
     }
 }
