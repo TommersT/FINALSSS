@@ -26,11 +26,15 @@ outputType = "vnc"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd draw && mvn exec:java"
+args = "mvn clean install && cd draw && mvn exec:java"
 
 [[ports]]
 localPort = 33959
 externalPort = 3000
+
+[[ports]]
+localPort = 35759
+externalPort = 3002
 
 [[ports]]
 localPort = 45597
