@@ -1,7 +1,9 @@
+// tommerst/finalsss/FINALSSS-4b53253892a92ed882030feb653ef76e91b6ab5b/draw/src/main/java/com/gabriel/draw/service/DrawingCommandAppService.java
 package com.gabriel.draw.service;
 
+// FIX: Add missing import if needed, though SetDrawModeCommand is removed now
+// import com.gabriel.draw.command.SetDrawModeCommand;
 import com.gabriel.draw.command.AddShapeCommand;
-import com.gabriel.draw.command.SetDrawModeCommand;
 import com.gabriel.draw.command.MoveCommand;
 import com.gabriel.draw.command.ScaleCommand;
 import com.gabriel.draw.command.DeleteShapeCommand;
@@ -14,36 +16,45 @@ import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.AppService;
 
-import javax.swing.*;
-import java.awt.*;
+// Removed unused Swing import
+import java.awt.*; // Keep AWT for Color, Point, Font
 import java.util.List;
 
 public class DrawingCommandAppService implements AppService {
-    public AppService appService;
+    // FIX: Make the wrapped service private final for better encapsulation
+    private final AppService appService;
+    // FIX: Static instance management can be tricky. Consider dependency injection instead.
+    // For now, keep the Singleton pattern but ensure it's initialized correctly.
     protected static DrawingCommandAppService drawingCommandAppService = null;
 
-    protected DrawingCommandAppService(AppService appService){
+    // FIX: Constructor should be private for Singleton
+    private DrawingCommandAppService(AppService appService){
         this.appService = appService;
     }
 
-    public static AppService getInstance(){
+    // FIX: Standard Singleton getInstance method - lazy initialization
+    public static AppService getInstance(AppService underlyingService){
+        if(drawingCommandAppService == null){
+            // Ensure the underlying service is not null
+            if (underlyingService == null) {
+                throw new IllegalArgumentException("Underlying AppService cannot be null for Singleton initialization.");
+            }
+            drawingCommandAppService = new DrawingCommandAppService(underlyingService);
+        }
+        // Optional: Check if the provided service matches the one used for initialization if called multiple times?
+        // else if (drawingCommandAppService.appService != underlyingService) {
+        //    // Handle mismatch? Log warning? Throw exception? Re-initialize?
+        // }
         return drawingCommandAppService;
     }
 
-    public static DrawingCommandAppService getInstance(AppService appService){
-        if(drawingCommandAppService == null){
-            drawingCommandAppService = new DrawingCommandAppService(appService);
-        };
-        return drawingCommandAppService;
-    }
-    
     public AppService getUnderlyingAppService() {
         return appService;
     }
 
     @Override
     public void undo() {
-        CommandService.undo();;
+        CommandService.undo();
     }
 
     @Override
@@ -58,9 +69,7 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setShapeMode(ShapeMode shapeMode) {
-        // This is where commands *should* be created.
-        // We will do it in the PropertyEventListener for now
-        // to handle both menu clicks and property sheet changes.
+        // ActionController or PropertyEventListener should create the command
         appService.setShapeMode(shapeMode);
     }
 
@@ -71,6 +80,7 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setToolMode(ToolMode toolMode) {
+        // Direct state change, not typically undone itself
         appService.setToolMode(toolMode);
     }
 
@@ -81,9 +91,16 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setDrawMode(DrawMode drawMode) {
-        Command command = new SetDrawModeCommand(appService, drawMode);
-        CommandService.ExecuteCommand(command);
+        // **** CHANGE ****
+        // Directly call the underlying service. DrawMode changes during
+        // operations like dragging aren't usually user-initiated undoable actions.
+        // Command command = new SetDrawModeCommand(appService, drawMode);
+        // CommandService.ExecuteCommand(command);
+        appService.setDrawMode(drawMode); // Call directly
+        // **** END CHANGE ****
     }
+
+    // ... (Rest of the methods remain the same as the previous version) ...
 
     @Override
     public Color getColor() {
@@ -92,7 +109,7 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setColor(Color color) {
-        // This will be wrapped by the listener
+        // Command is created by PropertyEventListener or ActionController
         appService.setColor(color);
     }
 
@@ -103,55 +120,63 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setFill(Color color) {
-        // This will be wrapped by the listener
+        // Command is created by PropertyEventListener or ActionController
         appService.setFill(color);
     }
 
     @Override
     public void move(Shape shape, Point start, Point end) {
-        appService.move(shape,start, end);
+        // Preview move - call underlying directly
+        appService.move(shape, start, end);
     }
 
     @Override
     public void move(Point start, Point end) {
+        // Final move - create command
         if (!appService.getSelectedShapes().isEmpty()) {
-            Command command = new MoveCommand(appService, start, end);
+            Command command = new MoveCommand(this, start, end); // Pass 'this' (the wrapped service)
             CommandService.ExecuteCommand(command);
         } else {
-            appService.move(start, end);
+            // If nothing selected, do nothing for now
         }
     }
 
     @Override
     public void scale(Point start, Point end) {
+        // Scales the entire drawing? Unlikely use case.
         appService.scale(start, end);
     }
 
     @Override
     public void scale(Shape shape, Point start, Point end) {
-        Command command = new ScaleCommand(appService, shape, start, end);
+        // Final scale - create command
+        Command command = new ScaleCommand(this, shape, start, end); // Pass 'this'
         CommandService.ExecuteCommand(command);
     }
 
     @Override
     public void scale(Shape shape, Point end) {
-        appService.scale(shape,end);
+        // Preview scale during creation - call underlying directly
+        appService.scale(shape, end);
     }
 
     @Override
     public void create(Shape shape) {
-        Command command = new AddShapeCommand(appService, shape);
+        // Final creation - create command
+        Command command = new AddShapeCommand(this, shape); // Pass 'this'
         CommandService.ExecuteCommand(command);
     }
 
     @Override
     public void insertAt(Shape shape, int index) {
+        // Used by Undo logic - call underlying directly
         appService.insertAt(shape, index);
     }
 
     @Override
     public void delete(Shape shape) {
-        Command command = new DeleteShapeCommand(appService, shape);
+        // Final delete - create command
+        Command command = new DeleteShapeCommand(this, shape); // Pass 'this'
         CommandService.ExecuteCommand(command);
     }
 
@@ -167,6 +192,8 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setDrawing(Drawing drawing) {
+        // Replacing the entire drawing model usually clears undo/redo history.
+        CommandService.clear(); // Clear stacks when loading/new drawing
         appService.setDrawing(drawing);
     }
 
@@ -182,6 +209,7 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void search(Point p) {
+        // Selection - direct call
         appService.search(p);
     }
 
@@ -192,22 +220,26 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void open(String filename) {
+        // Clear history before opening
+        CommandService.clear();
         appService.open(filename);
     }
 
 
     @Override
     public void save() {
-        appService.save();;
+        appService.save(); // Save is not typically undoable
     }
 
     @Override
     public void saveas(String filename) {
-        appService.saveas(filename);
+        appService.saveas(filename); // Save As is not typically undoable
     }
 
     @Override
     public void newDrawing() {
+        // Clear history for new drawing
+        CommandService.clear();
         appService.newDrawing();
     }
 
@@ -218,6 +250,7 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void select(Shape selectedShape) {
+        // Selection - direct call
         appService.select(selectedShape);
     }
 
@@ -238,12 +271,14 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void clearSelections(){
-        appService.clearSelections();;
+        appService.clearSelections();
     }
+
+    // --- Property Setters ---
+    // These are wrapped by PropertyEventListener which creates commands
 
     @Override
     public void setThickness(int thickness) {
-        // This will be wrapped by the listener
         appService.setThickness(thickness);
     }
 
@@ -254,7 +289,6 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setXLocation(int xLocation) {
-        // This will be wrapped by the listener
         appService.setXLocation(xLocation);
     }
 
@@ -265,7 +299,6 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setYLocation(int yLocation) {
-        // This will be wrapped by the listener
         appService.setYLocation(yLocation);
     }
 
@@ -276,7 +309,6 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setWidth(int width) {
-        // This will be wrapped by the listener
         appService.setWidth(width);
     }
 
@@ -287,7 +319,6 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setHeight(int height) {
-        // This will be wrapped by the listener
         appService.setHeight(height);
     }
 
@@ -318,7 +349,6 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setText(String text) {
-        // This will be wrapped by the listener
         appService.setText(text);
     }
 
@@ -329,39 +359,43 @@ public class DrawingCommandAppService implements AppService {
 
     @Override
     public void setFontSize(int fontSize) {
-        // This will be wrapped by the listener
         appService.setFontSize(fontSize);
     }
 
     @Override
     public void setFontFamily(String family) {
-        // This will be wrapped by the listener
         appService.setFontFamily(family);
     }
 
     @Override
     public void setFontStyle(int style) {
-        // This will be wrapped by the listener
         appService.setFontStyle(style);
     }
-    
+
+    // --- Arrangement Methods ---
+    // These need commands implemented eventually
+
     @Override
     public void bringToFront(Shape shape) {
+        // TODO: Implement BringToFrontCommand
         appService.bringToFront(shape);
     }
-    
+
     @Override
     public void sendToBack(Shape shape) {
+        // TODO: Implement SendToBackCommand
         appService.sendToBack(shape);
     }
-    
+
     @Override
     public void bringForward(Shape shape) {
+        // TODO: Implement BringForwardCommand
         appService.bringForward(shape);
     }
-    
+
     @Override
     public void sendBackward(Shape shape) {
+        // TODO: Implement SendBackwardCommand
         appService.sendBackward(shape);
     }
 }

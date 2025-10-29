@@ -1,40 +1,78 @@
 package com.gabriel.draw.command;
 
+import com.gabriel.draw.service.DrawingCommandAppService;
 import com.gabriel.drawfx.command.Command;
+import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.AppService;
 import java.awt.Font;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SetFontSizeCommand implements Command {
     private AppService appService;
     private int oldValue;
     private int newValue;
-    private Font oldFont; // Need full font to restore
+    private Font oldFontContext; // Store complete old font for context
+    private boolean appliedToSelection;
+    private List<Shape> targetShapes;
 
-    public SetFontSizeCommand(AppService appService, int oldValue, int newValue, Font oldFont) {
+    public SetFontSizeCommand(AppService appService, int oldValue, int newValue, Font oldFontContext) {
         this.appService = appService;
         this.oldValue = oldValue;
         this.newValue = newValue;
-        this.oldFont = oldFont;
+        this.oldFontContext = oldFontContext; // Capture context
+        this.targetShapes = new ArrayList<>(appService.getSelectedShapes());
+        this.appliedToSelection = !this.targetShapes.isEmpty();
     }
 
     @Override
     public void execute() {
-        appService.setFontSize(newValue);
+        AppService baseService = getUnderlyingService();
+        if (appliedToSelection) {
+            for (Shape shape : targetShapes) {
+                Font currentShapeFont = shape.getFont() != null ? shape.getFont() : oldFontContext;
+                shape.setFont(new Font(currentShapeFont.getFamily(), currentShapeFont.getStyle(), newValue));
+            }
+        } else {
+            baseService.getDrawing().setFont(new Font(oldFontContext.getFamily(), oldFontContext.getStyle(), newValue));
+        }
+        triggerRepaint();
     }
 
     @Override
     public void undo() {
-        // appService.setFontSize(oldValue) is not enough, must restore full font
-        if (appService.getSelectedShape() != null) {
-            appService.getSelectedShape().setFont(oldFont);
+        AppService baseService = getUnderlyingService();
+        if (appliedToSelection) {
+            for (Shape shape : targetShapes) {
+                Font currentShapeFont = shape.getFont();
+                if (currentShapeFont != null) {
+                    shape.setFont(new Font(currentShapeFont.getFamily(), currentShapeFont.getStyle(), oldValue));
+                }
+            }
         } else {
-            appService.getDrawing().setFont(oldFont);
+            baseService.getDrawing().setFont(oldFontContext); // Restore full context
         }
-        appService.setFontSize(oldValue); // trigger repaint
+        triggerRepaint(); // ESSENTIAL
     }
 
     @Override
     public void redo() {
         execute();
+    }
+
+    private AppService getUnderlyingService() {
+        if (appService instanceof DrawingCommandAppService) {
+            return ((DrawingCommandAppService) appService).getUnderlyingAppService();
+        }
+        return appService;
+    }
+
+    private void triggerRepaint() {
+        AppService baseService = getUnderlyingService();
+        if (baseService instanceof com.gabriel.draw.service.DrawingAppService) {
+            ((com.gabriel.draw.service.DrawingAppService) baseService).triggerRepaint();
+        } else {
+            System.err.println("Warning: Could not trigger repaint from " + this.getClass().getSimpleName());
+        }
     }
 }

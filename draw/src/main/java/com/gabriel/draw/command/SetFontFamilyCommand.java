@@ -1,52 +1,79 @@
 package com.gabriel.draw.command;
 
+import com.gabriel.draw.service.DrawingCommandAppService;
 import com.gabriel.drawfx.command.Command;
-import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.AppService;
 import java.awt.Font;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SetFontFamilyCommand implements Command {
     private AppService appService;
-    private Font oldFont;
+    private Font oldFontContext; // Store the complete font context (size, style)
+    private String oldFamily;    // Specific property changed
     private String newFamily;
-    private Shape shape;
+    private boolean appliedToSelection;
+    private List<Shape> targetShapes;
 
-    public SetFontFamilyCommand(AppService appService, Font oldFont, String newFamily) {
+    public SetFontFamilyCommand(AppService appService, Font oldFontContext, String newFamily) {
         this.appService = appService;
-        this.oldFont = oldFont;
+        this.oldFontContext = oldFontContext;
+        this.oldFamily = oldFontContext.getFamily(); // Extract old value
         this.newFamily = newFamily;
-        this.shape = appService.getSelectedShape(); // Capture shape at creation time
+        this.targetShapes = new ArrayList<>(appService.getSelectedShapes());
+        this.appliedToSelection = !this.targetShapes.isEmpty();
     }
 
     @Override
     public void execute() {
-        // We use the appService's *implementation* to set, not the command-wrapped one.
-        // This is a bit of a workaround for the service-wrapper model.
-        // A better way would be for the command to talk to the *base* service.
-        // For now, we manually set the font.
-
-        Font font = new Font(newFamily, oldFont.getStyle(), oldFont.getSize());
-        if (shape != null) {
-            shape.setFont(font);
+        AppService baseService = getUnderlyingService();
+        if (appliedToSelection) {
+            for (Shape shape : targetShapes) {
+                Font currentShapeFont = shape.getFont() != null ? shape.getFont() : oldFontContext; // Use context if shape has no font
+                shape.setFont(new Font(newFamily, currentShapeFont.getStyle(), currentShapeFont.getSize()));
+            }
         } else {
-            appService.getDrawing().setFont(font);
+            baseService.getDrawing().setFont(new Font(newFamily, oldFontContext.getStyle(), oldFontContext.getSize()));
         }
-        appService.setFontFamily(newFamily); // This will trigger repaint
+        triggerRepaint();
     }
 
     @Override
     public void undo() {
-        if (shape != null) {
-            shape.setFont(oldFont);
+        AppService baseService = getUnderlyingService();
+        if (appliedToSelection) {
+            for (Shape shape : targetShapes) {
+                Font currentShapeFont = shape.getFont();
+                if (currentShapeFont != null) {
+                    shape.setFont(new Font(oldFamily, currentShapeFont.getStyle(), currentShapeFont.getSize()));
+                }
+            }
         } else {
-            appService.getDrawing().setFont(oldFont);
+            // Restore global font using the original context
+            baseService.getDrawing().setFont(oldFontContext);
         }
-        appService.setFontFamily(oldFont.getFamily()); // This will trigger repaint
+        triggerRepaint(); // ESSENTIAL
     }
 
     @Override
     public void redo() {
         execute();
+    }
+
+    private AppService getUnderlyingService() {
+        if (appService instanceof DrawingCommandAppService) {
+            return ((DrawingCommandAppService) appService).getUnderlyingAppService();
+        }
+        return appService;
+    }
+
+    private void triggerRepaint() {
+        AppService baseService = getUnderlyingService();
+        if (baseService instanceof com.gabriel.draw.service.DrawingAppService) {
+            ((com.gabriel.draw.service.DrawingAppService) baseService).triggerRepaint();
+        } else {
+            System.err.println("Warning: Could not trigger repaint from " + this.getClass().getSimpleName());
+        }
     }
 }

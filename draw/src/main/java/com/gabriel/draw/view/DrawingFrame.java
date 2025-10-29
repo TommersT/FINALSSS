@@ -1,4 +1,3 @@
-// tommerst/finalsss/FINALSSS-88c0dd560a5808d9ed1c9bce7a17f6f1ba863bfb/draw/src/main/java/com/gabriel/draw/view/DrawingFrame.java
 package com.gabriel.draw.view;
 
 import com.gabriel.draw.component.PropertySheet;
@@ -7,146 +6,145 @@ import com.gabriel.draw.controller.DrawingController;
 import com.gabriel.draw.controller.DrawingWindowController;
 import com.gabriel.draw.service.DrawingAppService;
 import com.gabriel.draw.service.DrawingCommandAppService;
-// Removed unused ShapeMode import
-import com.gabriel.drawfx.model.Drawing;
-// Removed unused Shape import
+// No longer importing Drawing directly, get from service
+//import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.service.AppService;
 import com.gabriel.drawfx.command.CommandService;
 import com.gabriel.property.PropertyOptions;
-// Removed unused PropertyEventAdapter and Property imports
+import com.gabriel.draw.controller.PropertyEventListener; // Import the listener
 
 import javax.swing.*;
 import java.awt.*;
-// Removed unused ActionListener import
 
 public class DrawingFrame extends JFrame {
 
     // Keep fields package-private or private unless needed otherwise
-    Drawing drawing;
     DrawingAppService drawingAppService; // Base service implementation
     AppService appService; // Command-wrapped service
-    // DrawingFrame drawingFrame; // Self-reference usually not needed
     Container pane;
-    private PropertySheet propertySheet;
-    ActionController actionListener; // For menu/toolbar actions
+    PropertySheet propertySheet; // Made accessible for listener update
+    ActionController actionListener;
     DrawingMenuBar drawingMenuBar;
     DrawingToolBar drawingToolBar;
-    DrawingView drawingView;
-    DrawingController drawingController; // For canvas interactions
+    DrawingView drawingView; // Made accessible for listener update
+    DrawingController drawingController;
     JScrollPane jScrollPane;
     DrawingStatusPanel drawingStatusPanel;
-    DrawingWindowController drawingWindowController; // For window events
+    DrawingWindowController drawingWindowController;
 
     public DrawingFrame() {
-        setTitle("GoDraw Application"); // Set a title
+        setTitle("GoDraw Application");
 
         // --- Model and Service Initialization ---
-        drawing = new Drawing(); // Should ideally be managed by the service
-        drawingAppService = new DrawingAppService(drawing); // Pass the model to the service
-        // Wrap the base service with the command service decorator
+        // Service manages its own drawing instance now
+        drawingAppService = new DrawingAppService();
         appService = DrawingCommandAppService.getInstance(drawingAppService);
 
         // --- Basic Frame Setup ---
         pane = getContentPane();
-        // BorderLayout is good for this structure
-        setLayout(new BorderLayout(5, 5)); // Add small gaps
+        setLayout(new BorderLayout(5, 5));
 
         // --- Controller Initialization ---
-        actionListener = new ActionController(appService); // For menu/toolbar
-        drawingController = new DrawingController(appService, null); // Create controller (view set later)
-        drawingWindowController = new DrawingWindowController(appService); // For window events
-
+        actionListener = new ActionController(appService);
+        drawingController = new DrawingController(appService, null); // View set later
+        drawingWindowController = new DrawingWindowController(appService);
 
         // --- UI Component Initialization ---
         drawingMenuBar = new DrawingMenuBar(actionListener);
         setJMenuBar(drawingMenuBar);
 
         drawingToolBar = new DrawingToolBar(actionListener);
-        actionListener.setToolBar(drawingToolBar); // Link action controller to toolbar
+        actionListener.setToolBar(drawingToolBar);
+        actionListener.setDrawingController(drawingController); // Link controllers
 
         drawingView = new DrawingView(appService);
-        drawingView.setDrawingController(drawingController); // <<< Link View to Controller
-        drawingController.setDrawingView(drawingView);     // <<< Link Controller to View
+        drawingView.setDrawingController(drawingController); // Link View -> Controller
+        drawingController.setDrawingView(drawingView);     // Link Controller -> View
 
-        // Setup DrawingView within a ScrollPane
-        drawingView.setPreferredSize(new Dimension(2000, 1500)); // Set a large preferred size for scrolling
+        drawingView.setPreferredSize(new Dimension(2000, 1500)); // Canvas size
         jScrollPane = new JScrollPane(drawingView);
-        // Optional: Set scroll increments for smoother scrolling
         jScrollPane.getVerticalScrollBar().setUnitIncrement(16);
         jScrollPane.getHorizontalScrollBar().setUnitIncrement(16);
 
-
         drawingStatusPanel = new DrawingStatusPanel();
-        drawingController.setDrawingStatusPanel(drawingStatusPanel); // Link controller to status panel
+        drawingController.setDrawingStatusPanel(drawingStatusPanel); // Link Controller -> StatusPanel
 
         // --- Property Sheet Initialization ---
-        buildPropertyTable(); // Create and configure the property sheet
-        drawingController.setPropertySheet(propertySheet); // Link controller to property sheet
+        buildPropertyTable(); // Creates and sets 'propertySheet' field
+        drawingController.setPropertySheet(propertySheet); // Link Controller -> PropertySheet
         JScrollPane propertyScrollPane = new JScrollPane(propertySheet);
-        propertyScrollPane.setPreferredSize(new Dimension(250, 0)); // Set preferred width
+        propertyScrollPane.setPreferredSize(new Dimension(250, 0)); // Width for property sheet
 
 
         // --- Layout Components ---
         pane.add(drawingToolBar, BorderLayout.NORTH);
         pane.add(jScrollPane, BorderLayout.CENTER);
-        pane.add(propertyScrollPane, BorderLayout.EAST); // Add property sheet to the right
+        pane.add(propertyScrollPane, BorderLayout.EAST);
         pane.add(drawingStatusPanel, BorderLayout.SOUTH);
 
         // --- Link Services and Listeners ---
-        drawingAppService.setDrawingView(drawingView); // Link base service to view for repaints
-        actionListener.setComponent(drawingView); // Set parent component for dialogs
-        actionListener.setFrame(this); // Set frame reference if needed by actions
-
+        drawingAppService.setDrawingView(drawingView); // Link base service -> View (needed for triggerRepaint)
+        actionListener.setComponent(drawingView); // Parent component for dialogs
+        actionListener.setFrame(this); // Frame reference
 
         // Window Listeners
         this.addWindowListener(drawingWindowController);
         this.addWindowFocusListener(drawingWindowController);
         this.addWindowStateListener(drawingWindowController);
 
-        // Command Service Listener for Undo/Redo button state
+        // Command Service Listener for Undo/Redo button state AND UI Updates
         CommandService.addListener((canUndo, canRedo) -> {
-            drawingToolBar.updateUndoRedoState(canUndo, canRedo);
-            // Optionally update menu items too
-            drawingMenuBar.updateUndoRedoState(canUndo, canRedo);
+            // Update buttons and menu items state
+            if (drawingToolBar != null) {
+                drawingToolBar.updateUndoRedoState(canUndo, canRedo);
+            }
+            if (drawingMenuBar != null) {
+                drawingMenuBar.updateUndoRedoState(canUndo, canRedo);
+            }
+
+            // *** CRUCIAL: Update Property Sheet after Undo/Redo ***
+            if (propertySheet != null) {
+                // Populate based on the current model state AFTER undo/redo finished
+                // Ensure this runs on the Event Dispatch Thread (EDT) for safety
+                SwingUtilities.invokeLater(() -> propertySheet.populateTable(appService));
+            }
+
+            // *** CRUCIAL: REPAINT the view after Undo/Redo ***
+            // Ensures selection handles, shape positions/colors, etc., are correct
+            if (drawingView != null) {
+                // Ensure repaint also runs on the EDT
+                SwingUtilities.invokeLater(() -> drawingView.repaint());
+            }
         });
 
         // --- Final Frame Configuration ---
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        // setSize(800, 600); // Initial size, pack might override
-        pack(); // Size the frame based on component preferred sizes
-        setMinimumSize(new Dimension(600, 400)); // Set a reasonable minimum size
+        pack(); // Adjust frame size to fit components
+        setMinimumSize(new Dimension(600, 400));
         setLocationRelativeTo(null); // Center on screen
-        // setVisible(true); // Moved to Main/Splash to show after setup
+        // setVisible(true); // Should be done by Main or Splash screen
 
-        // Set initial tool after everything is set up
+        // Set initial tool after setup is complete
         drawingToolBar.setActiveTool(com.gabriel.drawfx.ActionCommand.SELECT);
-        appService.setToolMode(com.gabriel.drawfx.ToolMode.SELECT); // Ensure service matches
-        drawingController.updateStatusBarTool("Select"); // Update status bar
+        appService.setToolMode(com.gabriel.drawfx.ToolMode.SELECT); // Sync service state
+        drawingController.updateStatusBarTool("Select"); // Update status bar text
     }
 
-    // Renamed from buildGUI for clarity
+    // Helper to build and configure the property sheet
     void buildPropertyTable() {
-        // Configure property sheet options (can be simplified if defaults are okay)
         PropertyOptions options = new PropertyOptions.Builder()
-                // .setHeaders("Attribute", "Value") // Example custom headers
-                // .setRowHeight(25)              // Example custom row height
+                // Add any custom options here if needed
                 .build();
-
         propertySheet = new PropertySheet(options);
-
-        // Add the single, centralized event listener
-        // Ensure this listener uses the *command-wrapped* appService
-        propertySheet.addEventListener(new com.gabriel.draw.controller.PropertyEventListener(appService));
-
-        // Initial population (likely empty or showing defaults)
+        // Link the listener that creates commands when properties are edited *in the sheet*
+        propertySheet.addEventListener(new PropertyEventListener(appService));
+        // Initial population (shows global properties or empty if nothing selected)
         propertySheet.populateTable(appService);
     }
 
-    // Removed the redundant inner EventListener class
-
-    // Optional main method for testing just the frame
+    // Main method for testing this frame directly (optional)
     public static void main(String[] args) {
-        // Set Look and Feel early
+        // Apply Look and Feel early
         try {
             for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -155,13 +153,11 @@ public class DrawingFrame extends JFrame {
                 }
             }
         } catch (Exception e) {
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ex) {
-                // Fallback
-            }
+            try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }
+            catch (Exception ex) { System.err.println("Failed to set LookAndFeel."); }
         }
 
+        // Run GUI on the Event Dispatch Thread
         SwingUtilities.invokeLater(() -> {
             DrawingFrame frame = new DrawingFrame();
             frame.setVisible(true);
