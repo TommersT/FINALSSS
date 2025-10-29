@@ -132,12 +132,10 @@ public class DrawingFrame extends JFrame {
             }
         });
 
-        System.out.println("DrawingFrame Constructor: Finished."); // Debug log
     }
 
     // Helper: Builds PropertySheet AND its JScrollPane
     void buildPropertyTableAndScrollPane() {
-        System.out.println("DrawingFrame: Building Property Table and ScrollPane...");
         PropertyOptions options = new PropertyOptions.Builder().build();
 
         // 1. Create the PropertySheet instance (constructor builds structure)
@@ -157,8 +155,6 @@ public class DrawingFrame extends JFrame {
 
         // Optional: Set viewport background
         propertyScrollPane.getViewport().setBackground(Color.WHITE);
-
-        System.out.println("DrawingFrame: Property Table and ScrollPane built.");
     }
 
     // Main method for testing

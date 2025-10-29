@@ -48,19 +48,14 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
     // *** CONSTRUCTOR: Initializes STRUCTURE ***
     public PropertySheet(PropertyOptions options) {
         super(options); // Creates table, empty model, sets basic options
-        System.out.println("PropertySheet Constructor: Super called.");
         initializeProperties(); // Adds rows/structure to the model
-        System.out.println("PropertySheet Constructor: Properties initialized.");
         configureColumns();     // Configures columns based on the model structure
-        System.out.println("PropertySheet Constructor: Columns configured.");
     }
 
     // *** Initializes the PROPERTIES and adds ROWS to the model ***
     private void initializeProperties() {
         propertyMap.clear(); // Clear map before rebuilding
         // DO NOT clear the model here; it's fresh from super()
-
-        System.out.println("PropertySheet: Initializing properties structure...");
 
         // Add properties one by one using the helper
         addInternalProperty(new StringProperty("Object Type", "None"));
@@ -80,11 +75,6 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
         addInternalProperty(new StringProperty("Font Family", "SansSerif"));
         addInternalProperty(new SelectionProperty<>("Font Style", fontStyleItems)); // Uses the predefined list
         addInternalProperty(new IntegerProperty("Font Size", 12));
-
-        System.out.println("PropertySheet: Properties structure initialized. Row count: " + getRowCount() + ", Map size: " + propertyMap.size());
-        if (getRowCount() != propertyMap.size()) {
-            System.err.println("!!! ERROR: Row count mismatch after initializeProperties !!!");
-        }
     }
 
     // Helper to add property to map AND call superclass to add row/component
@@ -97,6 +87,7 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
             super.addProperty(prop);
         } catch (Exception e) {
             System.err.println("Error adding internal property '" + prop.getName() + "': " + e.getMessage());
+            e.printStackTrace();
             if (propertyModel != null) {
                 propertyModel.addRow(new Object[]{prop.getName(), "[Add Error]"});
             }
@@ -109,7 +100,6 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
             System.err.println("PropertySheet configureColumns: Model/Columns not ready.");
             return;
         }
-        System.out.println("PropertySheet: Configuring columns...");
         setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         try {
             TableColumn propertyColumn = getColumnModel().getColumn(0);
@@ -122,13 +112,11 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
             System.err.println("Error configuring columns: " + e.getMessage());
         }
         setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
-        System.out.println("PropertySheet: Columns configured.");
     }
 
     // Override clear to rebuild the structure (use cautiously)
     @Override
     public void clear() {
-        System.out.println("PropertySheet.clear() called - Re-initializing property structure.");
         if (isEditing()) getCellEditor().stopCellEditing();
         // Clear internal lists first
         cellComponents.clear(); // List from superclass
@@ -141,24 +129,16 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
         configureColumns();
         // Notify UI of complete change
         if (propertyModel != null) propertyModel.fireTableStructureChanged();
-        System.out.println("PropertySheet: Cleared and re-initialized. Row count: " + getRowCount());
     }
 
     // *** METHOD DEFINITION for setEditingEnabled ***
     public void setEditingEnabled(boolean enabled) {
         if (this.editingEnabled == enabled) return; // Avoid unnecessary updates
-
         this.editingEnabled = enabled;
-        System.out.println("PropertySheet: Setting editingEnabled to " + enabled); // Debug Log
-
         // Force refresh of table structure and potentially cell states
         if (getModel() instanceof PropertyModel) {
-            // Firing structure change might be overkill, try data changed first
-            // ((PropertyModel) getModel()).fireTableStructureChanged();
             ((PropertyModel) getModel()).fireTableDataChanged(); // Notify cells need rerender
-            System.out.println("PropertySheet: Fired table data changed."); // Debug Log
         } else {
-            System.err.println("PropertySheet.setEditingEnabled: Model is not PropertyModel!");
             repaint(); // Fallback repaint
         }
     }
@@ -422,7 +402,6 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
         return super.getToolTipText(event);
     }
 
-    // --- Prevent external direct additions (Keep overrides) ---
-    @Override public void addProperty(Property property) { /* Ignore */ }
-    @Override public void addProperty(Property property, com.gabriel.property.cell.AbstractCellComponent cellComponent) { /* Ignore */ }
+    // REMOVED: These overrides were preventing rows from being added during initialization!
+    // The internal addInternalProperty method is the only one that should add properties anyway.
 }
