@@ -28,9 +28,9 @@ public class AddShapeCommand implements Command {
      */
     @Override
     public void execute() {
-        if (shape != null) {
-            // create() in service should handle repaint
-            underlyingAppService.create(shape);
+        if (shape != null && underlyingAppService != null) {
+            underlyingAppService.getDrawing().getShapes().add(shape);
+            triggerRepaint();
         }
     }
 
@@ -39,9 +39,18 @@ public class AddShapeCommand implements Command {
      */
     @Override
     public void undo() {
-        if (shape != null) {
-            // delete() in service should handle repaint
-            underlyingAppService.delete(shape);
+        if (shape != null && underlyingAppService != null) {
+            underlyingAppService.getDrawing().getShapes().remove(shape);
+            if (shape.isSelected()) {
+                underlyingAppService.clearSelections();
+            }
+            triggerRepaint();
+        }
+    }
+
+    private void triggerRepaint() {
+        if (underlyingAppService instanceof com.gabriel.draw.service.DrawingAppService) {
+            ((com.gabriel.draw.service.DrawingAppService) underlyingAppService).triggerRepaint();
         }
     }
 

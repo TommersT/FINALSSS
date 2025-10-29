@@ -100,12 +100,19 @@ public class DrawingFrame extends JFrame {
 
         // Command Service Listener (ensure updates run on EDT)
         CommandService.addListener((canUndo, canRedo) -> {
-            SwingUtilities.invokeLater(() -> {
+            if (SwingUtilities.isEventDispatchThread()) {
                 if (drawingToolBar != null) drawingToolBar.updateUndoRedoState(canUndo, canRedo);
                 if (drawingMenuBar != null) drawingMenuBar.updateUndoRedoState(canUndo, canRedo);
                 if (propertySheet != null) propertySheet.populateTable(appService);
                 if (drawingView != null) drawingView.repaint();
-            });
+            } else {
+                SwingUtilities.invokeLater(() -> {
+                    if (drawingToolBar != null) drawingToolBar.updateUndoRedoState(canUndo, canRedo);
+                    if (drawingMenuBar != null) drawingMenuBar.updateUndoRedoState(canUndo, canRedo);
+                    if (propertySheet != null) propertySheet.populateTable(appService);
+                    if (drawingView != null) drawingView.repaint();
+                });
+            }
         });
 
         // --- Final Frame Configuration ---

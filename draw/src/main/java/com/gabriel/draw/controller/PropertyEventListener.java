@@ -31,13 +31,13 @@ public class PropertyEventListener extends PropertyEventAdapter {
         Object propValue = property.getValue(); // Get value once
 
         try {
-            if (propName.equals("Fore color")) {
+            if (propName.equals("Fore Color")) {
                 Color oldValue = appService.getColor();
                 Color newValue = (Color) propValue;
                 if (!Objects.equals(oldValue, newValue)) {
                     cmd = new SetColorCommand(appService, oldValue, newValue);
                 }
-            } else if (propName.equals("Fill color")) {
+            } else if (propName.equals("Fill Color")) {
                 Color oldValue = appService.getFill();
                 Color newValue = (Color) propValue;
                 if (!Objects.equals(oldValue, newValue)) {
@@ -122,7 +122,7 @@ public class PropertyEventListener extends PropertyEventAdapter {
                 if (!Objects.equals(oldValue, newValue)) {
                     cmd = new SetTextCommand(appService, oldValue, (newValue != null ? newValue : ""));
                 }
-            } else if (propName.equals("Font size")) {
+            } else if (propName.equals("Font Size")) {
                 Font oldFont = appService.getFont();
                 if (oldFont != null && propValue instanceof Integer) {
                     int oldValue = oldFont.getSize();

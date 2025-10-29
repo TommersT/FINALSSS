@@ -613,15 +613,8 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
 
 
             // --- Final UI Updates ---
-            // Let the CommandService listener handle property sheet updates and repaint
-            // This ensures updates happen *after* the command has executed.
-            // if (propertySheet != null) {
-            //     SwingUtilities.invokeLater(() -> propertySheet.populateTable(appService));
-            // }
-            // if (drawingView != null) {
-            //     drawingView.repaint(); // Full repaint after action completes
-            // }
             updateStatusBarShape(); // Update status bar after selection might change
+            // CommandService listener will handle property sheet and repaint updates
         }
     }
 
