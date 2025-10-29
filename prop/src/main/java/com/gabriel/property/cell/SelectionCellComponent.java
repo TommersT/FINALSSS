@@ -8,6 +8,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent; // <<<--- ADDED for ActionListener
 import java.awt.event.ActionListener; // <<<--- ADDED for ActionListener
 import java.util.Objects; // For comparing values
+import com.gabriel.property.property.Property; // <<<--- ADD THIS LINE
 
 public class SelectionCellComponent extends AbstractCellComponent {
 
