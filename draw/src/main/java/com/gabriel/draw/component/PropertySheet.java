@@ -20,16 +20,18 @@ import com.gabriel.property.cell.SelectionCellComponent; // Import needed for ce
 import javax.swing.*;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn; // Import TableColumn
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
+// REMOVED: import java.awt.Rectangle; // No longer needed
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class PropertySheet extends PropertyPanel {
+public class PropertySheet extends PropertyPanel { // PropertyPanel extends JTable
 
     // Store references to the Property objects to update their values
     private final Map<String, Property<?>> propertyMap = new HashMap<>();
@@ -53,6 +55,7 @@ public class PropertySheet extends PropertyPanel {
     public PropertySheet(PropertyOptions options) {
         super(options);
         initializeProperties(); // Create all properties upfront
+        configureColumns(); // Configure columns after init
     }
 
     // Method for DrawingController to set editability
@@ -71,7 +74,9 @@ public class PropertySheet extends PropertyPanel {
     private void initializeProperties() {
         // Clear existing (if any)
         propertyMap.clear();
-        super.clear(); // Clear rows from the underlying model as well
+        if (getModel() instanceof PropertyModel) { // Check if model exists before clearing
+            ((PropertyModel) getModel()).setRowCount(0); // More direct way to clear DefaultTableModel
+        }
 
         // Define properties in the desired order
         addInternalProperty(new StringProperty("Object Type", "None")); // Non-editable type display
@@ -95,45 +100,65 @@ public class PropertySheet extends PropertyPanel {
         addInternalProperty(new StringProperty("Font Family", "SansSerif"));
         addInternalProperty(new SelectionProperty<>("Font Style", fontStyleItems));
         addInternalProperty(new IntegerProperty("Font Size", 12));
-
-        // Note: 'Selected' is not added as it's not a user-editable property here.
-        // Note: 'Current Shape' dropdown removed for uniform layout.
-
-        // Initial render after adding all properties
-        this.revalidate();
-        this.repaint();
     }
+
+    // Configure column widths
+    private void configureColumns() {
+        setAutoResizeMode(JTable.AUTO_RESIZE_OFF); // Allow setting specific widths
+        TableColumn propertyColumn = getColumnModel().getColumn(0);
+        propertyColumn.setPreferredWidth(100); // Give property name column a decent width
+        propertyColumn.setMinWidth(80);
+        TableColumn valueColumn = getColumnModel().getColumn(1);
+        valueColumn.setPreferredWidth(160); // Give value column more space
+        valueColumn.setMinWidth(100);
+        // Turn auto-resize back on if desired, or leave it off
+        setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS); // Let value column take extra space
+    }
+
 
     // Helper to add property to the panel and map
     private void addInternalProperty(Property<?> prop) {
         propertyMap.put(prop.getName(), prop);
-        super.addProperty(prop); // Add to the table view
+        try {
+            super.addProperty(prop); // Add to the table view using the superclass method
+        } catch (Exception e) {
+            // Catch potential PropertyNotSupportedException or others
+            System.err.println("Error adding property '" + prop.getName() + "' internally: " + e.getMessage());
+            // Optionally add a fallback row indicating the error
+            if (getModel() instanceof PropertyModel) {
+                ((PropertyModel) getModel()).addRow(new Object[]{prop.getName(), "Error loading editor"});
+            }
+        }
     }
 
 
     // Override addProperty to prevent external direct additions after init
     @Override
     public void addProperty(Property property) {
-        // Optionally log a warning or throw exception
         System.err.println("Warning: PropertySheet properties should be initialized internally. Use populateTable to update values.");
-        // super.addProperty(property); // Avoid adding duplicates
     }
     @Override
     public void addProperty(Property property, com.gabriel.property.cell.AbstractCellComponent cellComponent) {
         System.err.println("Warning: PropertySheet properties should be initialized internally. Use populateTable to update values.");
-        // super.addProperty(property, cellComponent); // Avoid adding duplicates
     }
 
     // Override clear to re-initialize instead of just removing rows
     @Override
     public void clear() {
-        // Re-initialize to maintain the structure
         initializeProperties();
+        configureColumns(); // Reconfigure columns after re-initializing
     }
 
 
     // The main method to update property values based on selection
     public void populateTable(AppService appService) {
+        if (!(getModel() instanceof PropertyModel) || getModel().getRowCount() == 0) {
+            System.err.println("PropertySheet.populateTable called with invalid or empty model. Initializing.");
+            initializeProperties();
+            configureColumns();
+            if (appService == null) return;
+        }
+
         isPopulating = true; // Prevent listener feedback loops
 
         Shape shape = appService.getSelectedShape();
@@ -141,7 +166,7 @@ public class PropertySheet extends PropertyPanel {
         boolean shapeSelected = (shape != null);
         setEditingEnabled(shapeSelected); // Set internal flag for isCellEditable
 
-        // --- Update Property Values ---
+        // --- Update Property Values (using existing update methods) ---
         updateStringProperty("Object Type", shapeSelected ? shape.getClass().getSimpleName() : "Drawing");
         updateColorProperty("Fore Color", shapeSelected ? shape.getColor() : drawing.getColor());
         updateColorProperty("Fill Color", shapeSelected ? shape.getFill() : drawing.getFill());
@@ -156,7 +181,7 @@ public class PropertySheet extends PropertyPanel {
         updateIntegerProperty("Height", shapeSelected ? shape.getHeight() : 0);
         updateIntegerProperty("Line Thickness", shapeSelected ? shape.getThickness() : drawing.getThickness());
 
-        // Text/Font properties - Use shape's if Text, else drawing defaults
+        // Text/Font properties
         Font fontToUse = drawing.getFont();
         String textToUse = drawing.getText();
         boolean isTextShape = shapeSelected && Objects.equals(shape.getClass().getSimpleName(), "Text");
@@ -166,10 +191,8 @@ public class PropertySheet extends PropertyPanel {
             fontToUse = shape.getFont() != null ? shape.getFont() : fontToUse;
             textToUse = shape.getText() != null ? shape.getText() : textToUse;
         } else {
-            // If not a text shape, potentially use global defaults or clear/disable fields
             textToUse = ""; // Show empty if not text shape
-            // Keep global font defaults visible but potentially disabled by isCellEditable
-            fontToUse = drawing.getFont();
+            fontToUse = drawing.getFont(); // Use global defaults
         }
 
         updateStringProperty("Text", textToUse);
@@ -177,34 +200,27 @@ public class PropertySheet extends PropertyPanel {
         updateSelectionProperty("Font Style", fontToUse != null ? fontToUse.getStyle() : Font.PLAIN);
         updateIntegerProperty("Font Size", fontToUse != null ? fontToUse.getSize() : 12);
 
-        // Update ActionProperty's action and potentially state
+        // Update ActionProperty for Image
         Property<?> imageProp = propertyMap.get("Image");
         if (imageProp instanceof ActionProperty) {
             ActionProperty actionProp = (ActionProperty) imageProp;
-            // Update the action to use the current appService instance
-            actionProp.setValue(() -> {
-                if (appService != null && shapeSelected) { // Only allow change if shape selected
-                    appService.setImageFileename(); // Call service method to open dialog
+            actionProp.setValue(() -> { // Update action lambda
+                if (appService != null && shapeSelected && isPictureShape) { // Enable only for selected Picture
+                    appService.setImageFileename();
                 } else {
-                    System.err.println("Change Image action: AppService not available or no shape selected.");
+                    System.err.println("Change Image action: AppService not available or shape not a Picture.");
                 }
             });
-            // Consider enabling/disabling the button component itself here based on isPictureShape
-            int rowIndex = getPropertyRowIndex("Image");
-            if (rowIndex >= 0) {
-                Component editorComp = getCellEditor(rowIndex, 1).getTableCellEditorComponent(this, null, true, rowIndex, 1);
-                Component rendererComp = getCellRenderer(rowIndex, 1).getTableCellRendererComponent(this, null, true, false, rowIndex, 1);
-                editorComp.setEnabled(isPictureShape);
-                rendererComp.setEnabled(isPictureShape);
-            }
-
         }
 
 
         // --- Refresh Table UI ---
+        if (isEditing()) {
+            getCellEditor().stopCellEditing();
+        }
         if (getModel() instanceof PropertyModel) {
             PropertyModel model = (PropertyModel) getModel();
-            model.fireTableDataChanged();
+            model.fireTableDataChanged(); // Notify table structure/data might have changed
         } else {
             repaint(); // Fallback repaint
         }
@@ -217,15 +233,33 @@ public class PropertySheet extends PropertyPanel {
     private <T> void updateProperty(String name, T value) {
         Property<?> p = propertyMap.get(name);
         if (p != null) {
+            int rowIndex = getPropertyRowIndex(name);
+            if (rowIndex < 0 || rowIndex >= getRowCount()) {
+                System.err.println("Warning: Property '" + name + "' found in map but not in table model during update.");
+                return;
+            }
+
             try {
-                // Avoid ClassCastException if types mismatch somehow
-                if (p.getValue() == null || value == null || p.getValue().getClass().isAssignableFrom(value.getClass())) {
-                    ((Property<T>) p).setValue(value);
-                } else {
-                    System.err.println("Type mismatch prevented update for property '" + name + "'. Expected " + p.getValue().getClass() + ", got " + value.getClass());
+                Object currentModelValue = getModel().getValueAt(rowIndex, 1);
+                if (!Objects.equals(p.getValue(), value) || !Objects.equals(currentModelValue, value)) {
+                    if (p.getValue() == null || value == null || p.getValue().getClass().isAssignableFrom(value.getClass())) {
+                        ((Property<T>) p).setValue(value);
+                        if (isEditing() && getEditingRow() == rowIndex && getEditingColumn() == 1) {
+                            getCellEditor(rowIndex, 1).cancelCellEditing();
+                        }
+                        getModel().setValueAt(value, rowIndex, 1);
+                    } else if (value.getClass() == Integer.class && p.getValue().getClass() == Font.class && name.equals("Font Style")) {
+                        ((Property<T>) p).setValue(value);
+                        getModel().setValueAt(value, rowIndex, 1);
+                    }
+                    else {
+                        System.err.println("Type mismatch prevented update for property '" + name + "'. Expected " + p.getValue().getClass() + ", got " + value.getClass());
+                    }
                 }
             } catch (ClassCastException e) {
                 System.err.println("Error updating property '" + name + "': Type mismatch. Value: " + value + ", Error: " + e.getMessage());
+            } catch (ArrayIndexOutOfBoundsException e) {
+                System.err.println("Error updating property '" + name + "' at row " + rowIndex + ": Index out of bounds. Table size might be incorrect.");
             }
         } else {
             System.err.println("Warning: Property '" + name + "' not found in propertyMap for update.");
@@ -233,7 +267,7 @@ public class PropertySheet extends PropertyPanel {
     }
 
     private void updateStringProperty(String name, String value) {
-        updateProperty(name, value != null ? value : ""); // Default to empty string
+        updateProperty(name, value != null ? value : "");
     }
 
     private void updateIntegerProperty(String name, int value) {
@@ -245,14 +279,20 @@ public class PropertySheet extends PropertyPanel {
     }
 
     private void updateColorProperty(String name, Color value) {
-        updateProperty(name, value != null ? value : Color.GRAY); // Default color if null
+        updateProperty(name, value != null ? value : Color.GRAY);
     }
 
-    private void updateSelectionProperty(String name, Object value) {
+    private void updateSelectionProperty(String name, Object value) { // Value is the raw value (e.g., Integer for Font Style)
         Property<?> p = propertyMap.get(name);
+        int rowIndex = getPropertyRowIndex(name);
+
+        if (rowIndex < 0) {
+            System.err.println("Warning: Row index not found for selection property '" + name + "' during update.");
+            return;
+        }
+
         if (p instanceof SelectionProperty) {
             SelectionProperty sp = (SelectionProperty) p;
-            // Find the Item corresponding to the value
             Item<?> matchingItem = null;
             for (Object itemObj : sp.getItems()) {
                 if (itemObj instanceof Item) {
@@ -266,39 +306,43 @@ public class PropertySheet extends PropertyPanel {
 
             if (matchingItem != null) {
                 try {
-                    sp.setValue(matchingItem.getValue()); // Update property model value
-                    // Visually update the combo box in the table
-                    int rowIndex = getPropertyRowIndex(name);
-                    if (rowIndex >= 0) {
-                        // Stop any active editing first
+                    // Update property and model value IF they are different
+                    if (!Objects.equals(sp.getValue(), matchingItem.getValue()) ||
+                            !Objects.equals(getModel().getValueAt(rowIndex, 1), matchingItem.getValue()))
+                    {
                         if (isEditing() && getEditingRow() == rowIndex && getEditingColumn() == 1) {
                             getCellEditor(rowIndex, 1).stopCellEditing();
                         }
-                        // Update the renderer's value (which is often the editor itself)
-                        TableCellRenderer renderer = getCellRenderer(rowIndex, 1);
-                        if (renderer instanceof SelectionCellComponent) {
-                            ((SelectionCellComponent)renderer).setCellEditorValue(matchingItem); // Update combo box selection
-                        }
-                        TableCellEditor editor = getCellEditor(rowIndex, 1);
-                        if (editor instanceof SelectionCellComponent) {
-                            ((SelectionCellComponent)editor).setCellEditorValue(matchingItem); // Ensure editor also has right item
-                        }
+                        sp.setValue(matchingItem.getValue()); // Update internal property value
+                        getModel().setValueAt(matchingItem.getValue(), rowIndex, 1); // Update model value
+
+                        // *** REMOVED invokeLater block for visual update ***
+                        // Rely on fireTableDataChanged instead
                     }
                 } catch (Exception e) {
                     System.err.println("Error setting selection property '" + name + "': " + e.getMessage());
                 }
             } else {
                 System.err.println("Warning: Could not find matching item for value '" + value + "' in SelectionProperty '" + name + "'");
+                getModel().setValueAt(null, rowIndex, 1);
             }
+        } else {
+            System.err.println("Warning: Property '" + name + "' is not a SelectionProperty during updateSelectionProperty.");
         }
     }
+
 
     // Helper to find the row index of a property by name
     private int getPropertyRowIndex(String name) {
         for(int i = 0; i < getRowCount(); i++) {
-            Object propName = getValueAt(i, 0); // Property name is in column 0
-            if (name.equals(propName)) {
-                return i;
+            try {
+                Object propName = getValueAt(i, 0); // Property name is in column 0
+                if (name.equals(propName)) {
+                    return i;
+                }
+            } catch (ArrayIndexOutOfBoundsException e) {
+                System.err.println("Error in getPropertyRowIndex: Index out of bounds at row " + i + ". Table size might be incorrect.");
+                return -1; // Stop searching if table model is inconsistent
             }
         }
         return -1; // Not found
@@ -307,63 +351,104 @@ public class PropertySheet extends PropertyPanel {
     // --- Control Editability ---
     @Override
     public boolean isCellEditable(int row, int column) {
-        // Only allow editing the value column (column 1)
         if (column != 1) {
             return false;
         }
+        if (row < 0 || row >= getRowCount()) {
+            System.err.println("isCellEditable called with invalid row: " + row);
+            return false;
+        }
 
-        // Get the property name for the row
         Object propNameObj = getValueAt(row, 0);
         if (!(propNameObj instanceof String)) return false;
         String propName = (String) propNameObj;
 
-        // Find the Property object
         Property<?> prop = propertyMap.get(propName);
         if (prop == null) return false;
 
-        // Never allow editing Object Type
         if (propName.equals("Object Type")) return false;
-        // Button handles its own action, cell isn't 'editable' in text sense
-        if (prop instanceof ActionProperty) return true; // Let the button component handle enable/disable
 
-        // --- Logic based on selection state ---
+        if (prop instanceof ActionProperty) {
+            if (propName.equals("Image")) {
+                boolean isPictureShape = false;
+                int typeRowIndex = getPropertyRowIndex("Object Type");
+                if (editingEnabled && typeRowIndex >=0 && typeRowIndex < getRowCount()) {
+                    isPictureShape = "Picture".equals(getModel().getValueAt(typeRowIndex, 1));
+                }
+                return isPictureShape;
+            }
+            return true;
+        }
+
         if (!editingEnabled) { // No shape selected
-            // Allow editing only global defaults
             return propName.equals("Fore Color") || propName.equals("Fill Color") ||
                     propName.equals("Start Color") || propName.equals("End Color") ||
                     propName.equals("Use Gradient") || propName.equals("Line Thickness") ||
                     propName.equals("Text") || propName.equals("Font Family") ||
                     propName.equals("Font Style") || propName.equals("Font Size");
         } else { // Shape is selected
-            // Disable Text/Font properties if the selected shape isn't Text
-            // Need access to AppService or shape type info here. Postpone this check.
-            // TODO: Add check for shape type to disable Text/Font/Image for non-applicable shapes
+            boolean isTextShape = false;
+            int typeRowIndex = getPropertyRowIndex("Object Type");
+            if (typeRowIndex >=0 && typeRowIndex < getRowCount()) {
+                isTextShape = "Text".equals(getModel().getValueAt(typeRowIndex, 1));
+            }
 
-            return true; // Allow editing most things when shape is selected
+            if (!isTextShape && (propName.equals("Text") || propName.equals("Font Family") || propName.equals("Font Style") || propName.equals("Font Size"))) {
+                return false;
+            }
+            return true;
         }
     }
+
 
     // Override prepareRenderer/Editor to visually indicate disabled state
     @Override
     public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
         Component c = super.prepareRenderer(renderer, row, column);
-        // Set enabled state based on editability rules
-        c.setEnabled(isCellEditable(row, column));
-        // Optional: Change background for non-editable rows/cells for clarity
-        if (!isCellEditable(row, column) && column == 1) {
-            c.setBackground(Color.LIGHT_GRAY); // Example disabled background
+        boolean editable = isCellEditable(row, column);
+        c.setEnabled(editable); // Set enabled state
+
+        // Set background/foreground based on editability and selection
+        if (!editable && column == 1) {
+            c.setBackground(Color.LIGHT_GRAY);
+            c.setForeground(Color.GRAY);
         } else {
-            c.setBackground(getBackground()); // Use default background
+            if (isRowSelected(row)) {
+                c.setBackground(getSelectionBackground());
+                c.setForeground(getSelectionForeground());
+            } else {
+                c.setBackground(getBackground());
+                c.setForeground(getForeground());
+            }
         }
+        // Ensure combo box renderer (JLabel) text color is correct when disabled
+        if (c instanceof JLabel && !editable) {
+            c.setForeground(Color.GRAY);
+        }
+
         return c;
     }
 
     @Override
     public Component prepareEditor(TableCellEditor editor, int row, int column) {
         Component c = super.prepareEditor(editor, row, column);
-        // Ensure editor component also reflects enabled state
         c.setEnabled(isCellEditable(row, column));
+        c.setBackground(getBackground()); // Use default editor background
+        c.setForeground(getForeground());
         return c;
     }
-}
 
+    // --- ADDED: Override getToolTipText to show property description ---
+    @Override
+    public String getToolTipText(java.awt.event.MouseEvent event) {
+        int row = rowAtPoint(event.getPoint());
+        int col = columnAtPoint(event.getPoint());
+        if (row >= 0 && col == 0) { // Tooltip for property name column
+            Object propNameObj = getValueAt(row, 0);
+            if (propNameObj instanceof String) {
+                return (String) propNameObj; // For now, just show the name again
+            }
+        }
+        return super.getToolTipText(event); // Default tooltip behavior elsewhere
+    }
+}

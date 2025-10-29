@@ -6,12 +6,10 @@ import com.gabriel.draw.controller.DrawingController;
 import com.gabriel.draw.controller.DrawingWindowController;
 import com.gabriel.draw.service.DrawingAppService;
 import com.gabriel.draw.service.DrawingCommandAppService;
-// No longer importing Drawing directly, get from service
-//import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.service.AppService;
 import com.gabriel.drawfx.command.CommandService;
 import com.gabriel.property.PropertyOptions;
-import com.gabriel.draw.controller.PropertyEventListener; // Import the listener
+import com.gabriel.draw.controller.PropertyEventListener;
 
 import javax.swing.*;
 import java.awt.*;
@@ -62,7 +60,7 @@ public class DrawingFrame extends JFrame {
         drawingController.setDrawingView(drawingView);     // Link Controller -> View
 
         drawingView.setPreferredSize(new Dimension(2000, 1500)); // Canvas size
-        drawingScrollPane = new JScrollPane(drawingView); // Use new name
+        drawingScrollPane = new JScrollPane(drawingView);
         drawingScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         drawingScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         drawingScrollPane.getVerticalScrollBar().setUnitIncrement(16);
@@ -72,24 +70,22 @@ public class DrawingFrame extends JFrame {
         drawingStatusPanel = new DrawingStatusPanel();
         drawingController.setDrawingStatusPanel(drawingStatusPanel); // Link Controller -> StatusPanel
 
-        // --- Property Sheet Initialization ---
-        buildPropertyTable(); // Creates and sets 'propertySheet' field
+        // --- Property Sheet Initialization & Layout ---
+        buildPropertyTable(); // Creates and fully configures 'propertySheet'
         drawingController.setPropertySheet(propertySheet); // Link Controller -> PropertySheet
-        propertyScrollPane = new JScrollPane(propertySheet); // Assign to field
+
+        // Create the JScrollPane AFTER propertySheet is fully built and configured
+        propertyScrollPane = new JScrollPane(propertySheet);
         propertyScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-
-        // --- FIX: Set a fixed preferred width and let height be flexible ---
-        // Give it a definite preferred size that BorderLayout can work with initially.
-        // Height will still be determined by BorderLayout in the EAST position.
-        propertyScrollPane.setPreferredSize(new Dimension(250, 400)); // Set width and a reasonable initial height
-        propertyScrollPane.setMinimumSize(new Dimension(150, 100)); // Prevent it from becoming too small
-        // --- END FIX ---
-
+        propertyScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        propertyScrollPane.setPreferredSize(new Dimension(280, 500)); // Size hint for BorderLayout
+        propertyScrollPane.setMinimumSize(new Dimension(200, 300));
+        propertyScrollPane.getViewport().setBackground(Color.WHITE);
 
         // --- Layout Components ---
         pane.add(drawingToolBar, BorderLayout.NORTH);
-        pane.add(drawingScrollPane, BorderLayout.CENTER); // Use new name
-        pane.add(propertyScrollPane, BorderLayout.EAST);
+        pane.add(drawingScrollPane, BorderLayout.CENTER);
+        pane.add(propertyScrollPane, BorderLayout.EAST); // Add the scroll pane containing the configured table
         pane.add(drawingStatusPanel, BorderLayout.SOUTH);
 
         // --- Link Services and Listeners ---
@@ -102,47 +98,56 @@ public class DrawingFrame extends JFrame {
         this.addWindowFocusListener(drawingWindowController);
         this.addWindowStateListener(drawingWindowController);
 
-        // Command Service Listener
+        // Command Service Listener (ensure updates run on EDT)
         CommandService.addListener((canUndo, canRedo) -> {
-            if (drawingToolBar != null) drawingToolBar.updateUndoRedoState(canUndo, canRedo);
-            if (drawingMenuBar != null) drawingMenuBar.updateUndoRedoState(canUndo, canRedo);
-            if (propertySheet != null) SwingUtilities.invokeLater(() -> propertySheet.populateTable(appService));
-            if (drawingView != null) SwingUtilities.invokeLater(() -> drawingView.repaint());
+            SwingUtilities.invokeLater(() -> {
+                if (drawingToolBar != null) drawingToolBar.updateUndoRedoState(canUndo, canRedo);
+                if (drawingMenuBar != null) drawingMenuBar.updateUndoRedoState(canUndo, canRedo);
+                if (propertySheet != null) propertySheet.populateTable(appService);
+                if (drawingView != null) drawingView.repaint();
+            });
         });
 
         // --- Final Frame Configuration ---
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1024, 768); // Set a good default size
-        setMinimumSize(new Dimension(800, 600)); // Increase minimum size
+        setSize(1200, 800); // Set desired size
+        setMinimumSize(new Dimension(900, 600)); // Set minimum size
         setLocationRelativeTo(null); // Center on screen
+        // Layout happens implicitly when setVisible(true) is called
 
-        // --- Ensure Layout is Validated ---
-        pane.revalidate(); // Re-calculate layout
-        pane.repaint(); // Redraw
-        // --- END Ensure ---
-
-
-        // Set initial tool after setup is complete
+        // --- Set Initial Tool ---
         if (drawingToolBar != null) {
             drawingToolBar.setActiveTool(com.gabriel.drawfx.ActionCommand.SELECT);
         }
         appService.setToolMode(com.gabriel.drawfx.ToolMode.SELECT);
-        drawingController.updateStatusBarTool("Select");
+        if (drawingController != null) {
+            drawingController.updateStatusBarTool("Select");
+        }
     }
 
     // Helper to build and configure the property sheet
     void buildPropertyTable() {
-        PropertyOptions options = new PropertyOptions.Builder()
-                .build();
+        PropertyOptions options = new PropertyOptions.Builder().build();
+        // 1. Create the PropertySheet (constructor calls initializeProperties)
         propertySheet = new PropertySheet(options);
-        // --- FIX: Ensure table has a minimum size ---
-        propertySheet.setMinimumSize(new Dimension(150, 300)); // Prevent table itself from collapsing
-        // --- END FIX ---
+
+        // 2. Configure the table ITSELF *after* properties are initialized
+        propertySheet.setPreferredScrollableViewportSize(new Dimension(260, 400)); // Suggest viewport size to scroll pane
+        propertySheet.setFillsViewportHeight(true); // Allow table to use vertical space
+        propertySheet.setMinimumSize(new Dimension(200, 300)); // Minimum size for the table
+        propertySheet.setBackground(Color.WHITE); // Make sure it's visible
+        propertySheet.setOpaque(true);
+        propertySheet.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS); // Sensible default resize mode
+
+        // 3. Force the table to calculate its layout based on the model/columns
+        propertySheet.revalidate(); // *** ADDED: Explicit revalidation ***
+
+        // 4. Add listener and populate (redundant populate, initializeProperties did it, but safe)
         propertySheet.addEventListener(new PropertyEventListener(appService));
-        propertySheet.populateTable(appService);
+        propertySheet.populateTable(appService); // Ensure values are current
     }
 
-    // Main method for testing this frame directly (optional)
+    // Main method for testing this frame directly
     public static void main(String[] args) {
         // Apply Look and Feel early
         try {
@@ -160,8 +165,7 @@ public class DrawingFrame extends JFrame {
         // Run GUI on the Event Dispatch Thread
         SwingUtilities.invokeLater(() -> {
             DrawingFrame frame = new DrawingFrame();
-            frame.setVisible(true); // Make visible here for testing
+            frame.setVisible(true); // Make visible - this triggers the layout process
         });
     }
 }
-
