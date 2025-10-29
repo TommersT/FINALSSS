@@ -72,8 +72,6 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
         addInternalProperty(new IntegerProperty("Height", 0));
         addInternalProperty(new IntegerProperty("Line Thickness", 1));
         addInternalProperty(new StringProperty("Text", ""));
-        addInternalProperty(new ActionProperty("Image", "Change...", () -> { /* Action set in populate */ }));
-        addInternalProperty(new ActionProperty("Remove Image", "Remove", () -> { /* Action set in populate */ }));
         addInternalProperty(new StringProperty("Font Family", "SansSerif"));
         addInternalProperty(new SelectionProperty<>("Font Style", fontStyleItems)); // Uses the predefined list
         addInternalProperty(new IntegerProperty("Font Size", 12));
@@ -203,38 +201,6 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
             updateStringProperty("Font Family", fontToUse != null ? fontToUse.getFamily() : "SansSerif");
             updateSelectionProperty("Font Style", fontToUse != null ? fontToUse.getStyle() : Font.PLAIN);
             updateIntegerProperty("Font Size", fontToUse != null ? fontToUse.getSize() : 12);
-
-            // Update Image Action lambda
-            Property<?> imageProp = propertyMap.get("Image");
-            if (imageProp instanceof ActionProperty) {
-                ((ActionProperty) imageProp).setValue(() -> {
-                    if (appService != null) {
-                        Shape currentSelection = appService.getSelectedShape();
-                        if (currentSelection != null && "Picture".equals(currentSelection.getClass().getSimpleName())) {
-                            appService.setImageFileename(); // Open dialog
-                        } else {
-                            System.out.println("Change Image: Select a Picture shape first.");
-                        }
-                    }
-                });
-            }
-            
-            // Update Remove Image Action lambda
-            Property<?> removeImageProp = propertyMap.get("Remove Image");
-            if (removeImageProp instanceof ActionProperty) {
-                ((ActionProperty) removeImageProp).setValue(() -> {
-                    if (appService != null) {
-                        Shape currentSelection = appService.getSelectedShape();
-                        if (currentSelection != null && "Picture".equals(currentSelection.getClass().getSimpleName())) {
-                            // Delete the selected image
-                            appService.delete(currentSelection);
-                            System.out.println("Image removed successfully.");
-                        } else {
-                            System.out.println("Remove Image: Select a Picture shape first.");
-                        }
-                    }
-                });
-            }
         } catch (Exception ex) {
             System.err.println("Exception during PropertySheet.populateTable value updates:");
             ex.printStackTrace();
@@ -329,12 +295,6 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
         String propName = (String) propNameObj;
 
         if ("Object Type".equals(propName)) return false;
-        if ("Image".equals(propName)) {
-            return editingEnabled && "Picture".equals(getStringValueFromModel("Object Type"));
-        }
-        if ("Remove Image".equals(propName)) {
-            return editingEnabled && "Picture".equals(getStringValueFromModel("Object Type"));
-        }
         if (!editingEnabled) {
             return "Fore Color".equals(propName) || "Fill Color".equals(propName) ||
                     "Start Color".equals(propName) || "End Color".equals(propName) ||

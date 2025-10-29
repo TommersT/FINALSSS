@@ -22,11 +22,11 @@ name = "GoDraw Application"
 author = "agent"
 
 [workflows.workflow.metadata]
-outputType = "console"
+outputType = "vnc"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd draw && mvn exec:java -Dexec.mainClass=\"com.gabriel.draw.Main\""
+args = "cd draw && mvn exec:java"
 
 [[ports]]
 localPort = 33959
