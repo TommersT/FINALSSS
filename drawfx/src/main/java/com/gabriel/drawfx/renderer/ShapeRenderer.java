@@ -1,5 +1,3 @@
-// tommerst/finalsss/FINALSSS-de875fc7483c0551319e977be48e282c3289c2a8/drawfx/src/main/java/com/gabriel/drawfx/renderer/ShapeRenderer.java
-// Updated with Line handle logic
 package com.gabriel.drawfx.renderer;
 
 import com.gabriel.drawfx.model.Shape;
@@ -9,57 +7,53 @@ import java.awt.*;
 public class ShapeRenderer implements Renderer {
 
     @Override
-    public void render(Graphics g,  Shape shape, boolean xor) {
-        if(shape.isSelected()){
+    public void render(Graphics g, Shape shape, boolean xor) {
+        // Draw handles ONLY if the shape is selected and not in XOR mode
+        if (shape.isSelected() && !xor) {
             Point loc = shape.getLocation();
+            if (loc == null) return; // Need location to draw handles
+
             int width = shape.getWidth();
             int height = shape.getHeight();
-            int r = 5; // Handle radius/half-size
+            int r = shape.getR(); // Use handle size from shape
 
-            Graphics2D g2 = (Graphics2D) g; // Use Graphics2D for potential stroke changes
-            Color handleColor = Color.BLACK; // Or use shape.getColor()?
+            Graphics2D g2 = (Graphics2D) g;
+            Color handleColor = Color.BLACK;
             Stroke handleStroke = new BasicStroke(1); // Thin stroke for handles
 
-            // Set XOR mode or normal color
-            Composite originalComposite = g2.getComposite(); // Save original composite
-            if(xor){
-                g2.setXORMode(handleColor); // XOR with handle color
-            }
-            else {
-                g2.setColor(handleColor);
-            }
+            // --- Adjust location for Text visual bounds before drawing handles ---
+            // This logic needs to be aware of Text shapes, ideally via a method on Shape
+            // or handled entirely within TextRenderer's override.
+            // For now, we assume TextRenderer adjusts coordinates *before* calling super.render
+            // OR we add a generic way to get the visual top-left.
+            // Let's assume TextRenderer handles the coordinate adjustment for now.
+
+            // Normalize dimensions and location for handle drawing if width/height might be negative
+            int x1 = Math.min(loc.x, loc.x + width);
+            int y1 = Math.min(loc.y, loc.y + height);
+            int widthAbs = Math.abs(width);
+            int heightAbs = Math.abs(height);
+
+
+            // --- Draw the standard 8 handles ---
+            // Removed the check for Line type. The base renderer always draws 8 handles.
+            // Specific renderers like LineRenderer can override this if needed,
+            // or clear the handles drawn by super and draw their own.
+            g2.setColor(handleColor);
             g2.setStroke(handleStroke);
 
+            // Use fillRect for solid handles which are easier to see/click
+            g2.fillRect(x1 - r, y1 - r, 2*r, 2*r); // UpperLeft
+            g2.fillRect(x1 - r, y1 + heightAbs - r, 2*r, 2*r); // LowerLeft
+            g2.fillRect(x1 + widthAbs - r, y1 - r, 2*r, 2*r); // UpperRight
+            g2.fillRect(x1 + widthAbs - r, y1 + heightAbs - r, 2*r, 2*r); // LowerRight
 
-            // --- START MODIFICATION ---
-            // Check if the shape is an instance of the specific Line class from the draw module
-            // Using instanceof is generally preferred over comparing class names
-            boolean isLine = shape instanceof com.gabriel.draw.model.Line;
+            g2.fillRect(x1 + widthAbs/2 - r, y1 - r, 2*r, 2*r); // MiddleTop
+            g2.fillRect(x1 - r, y1 + heightAbs/2 - r, 2*r, 2*r); // MiddleLeft
+            g2.fillRect(x1 + widthAbs - r, y1 + heightAbs/2 - r, 2*r, 2*r); // MiddleRight
+            g2.fillRect(x1 + widthAbs/2 - r, y1 + heightAbs - r, 2*r, 2*r); // MiddleBottom
 
-            if (isLine) {
-                // Draw handles only at start and end points for Lines
-                g2.fillRect(loc.x - r, loc.y - r, 2 * r, 2 * r); // Start point handle (filled)
-                g2.fillRect(loc.x + width - r, loc.y + height - r, 2 * r, 2 * r); // End point handle (filled)
-            } else {
-                // Draw all 8 handles for other shapes (Rect, Ellipse, Text, Image)
-                // Use fillRect for solid handles which are easier to see/click
-                g2.fillRect(loc.x-r,loc.y-r, 2*r,2*r); // UpperLeft
-                g2.fillRect(loc.x-r,loc.y+height-r, 2*r, 2*r); // LowerLeft
-                g2.fillRect(loc.x + width -r,loc.y -r, 2*r, 2*r); // UpperRight
-                g2.fillRect(loc.x + width -r,loc.y+height-r, 2*r, 2*r); // LowerRight
-
-                g2.fillRect(loc.x + width/2 -r,loc.y-r, 2*r, 2*r); // MiddleTop
-                g2.fillRect(loc.x -r,loc.y+height/2-r, 2*r, 2*r); // MiddleLeft
-                g2.fillRect(loc.x + width -r,loc.y+height/2-r, 2*r, 2*r); // MiddleRight
-                g2.fillRect(loc.x + width/2 -r,loc.y+height-r, 2*r, 2*r); // MiddleBottom
-            }
-            // --- END MODIFICATION ---
-
-            // Restore original paint mode and composite if XOR was used
-            if (xor) {
-                g2.setPaintMode();
-            }
-            g2.setComposite(originalComposite); // Restore original composite
+            // No need for XOR mode or composite handling here, as we only draw when !xor
         }
     }
 }

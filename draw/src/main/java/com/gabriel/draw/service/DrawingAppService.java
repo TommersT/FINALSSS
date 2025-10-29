@@ -1,6 +1,7 @@
 package com.gabriel.draw.service;
 
 import com.gabriel.draw.view.DrawingView; // Import DrawingView
+import com.gabriel.drawfx.service.SearchService; // <-- Add this line
 import com.gabriel.drawfx.DrawMode;
 import com.gabriel.drawfx.SelectionMode;
 import com.gabriel.drawfx.ShapeMode;
