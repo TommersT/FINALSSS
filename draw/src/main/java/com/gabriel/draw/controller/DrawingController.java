@@ -488,10 +488,16 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
 
                 } // End loop through shapes
 
-                // *** Update property sheet live during drag ***
-                if (propertySheet != null) {
-                    propertySheet.populateTable(appService); // <<< ENSURE THIS LINE IS PRESENT
+                // *** NEW: Update property sheet live during drag ***
+                if (propertySheet != null && primarySelectedShape != null && primarySelectedShape.getLocation() != null) {
+                    // Update only the relevant properties in the sheet directly
+                    // Use the specific update methods added to PropertySheet
+                    propertySheet.updateIntegerProperty("X Location", primarySelectedShape.getLocation().x);
+                    propertySheet.updateIntegerProperty("Y Location", primarySelectedShape.getLocation().y);
+                    propertySheet.updateIntegerProperty("Width", primarySelectedShape.getWidth());
+                    propertySheet.updateIntegerProperty("Height", primarySelectedShape.getHeight());
                 }
+                // *** END NEW ***
 
                 start = new Point(end); // *** Update start for the next drag increment ***
             } // End if isDraggingForMoveOrScale

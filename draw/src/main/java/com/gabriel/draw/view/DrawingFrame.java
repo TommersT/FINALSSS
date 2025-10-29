@@ -1,4 +1,3 @@
-// tommerst/finalsss/FINALSSS-ab98287e5a251ea0f90f45adc2a537ebda4a1511/draw/src/main/java/com/gabriel/draw/view/DrawingFrame.java
 package com.gabriel.draw.view;
 
 import com.gabriel.draw.component.PropertySheet;
@@ -14,11 +13,11 @@ import com.gabriel.draw.controller.PropertyEventListener; // Keep this listener 
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent; // <<< ADDED Missing Import
+import java.awt.event.ActionEvent; // Keep import
 
 public class DrawingFrame extends JFrame {
 
-    // <<< --- RESTORED FIELD DECLARATIONS --- >>>
+    // Keep field declarations
     DrawingAppService drawingAppService; // Base service implementation
     AppService appService; // Command-wrapped service
     Container pane;
@@ -32,7 +31,6 @@ public class DrawingFrame extends JFrame {
     DrawingStatusPanel drawingStatusPanel;
     DrawingWindowController drawingWindowController;
     JScrollPane propertyScrollPane; // Keep reference
-    // <<< --- END RESTORED FIELD DECLARATIONS --- >>>
 
     public DrawingFrame() {
         setTitle("GoDraw Application");
@@ -44,15 +42,13 @@ public class DrawingFrame extends JFrame {
 
         // --- Basic Frame Setup ---
         pane = getContentPane();
-        // Use BorderLayout with gaps
         setLayout(new BorderLayout(5, 5));
-        // Add padding around the entire frame content
         ((JPanel) pane).setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // --- Controller Initialization ---
         actionListener = new ActionController(appService);
         // Defer setting view/toolbar/propertySheet until they are created
-        drawingController = new DrawingController(appService, null);
+        drawingController = new DrawingController(appService, null); // Pass null initially
         drawingWindowController = new DrawingWindowController(appService);
 
         // --- UI Component Initialization & Layout (Order Matters) ---
@@ -74,7 +70,6 @@ public class DrawingFrame extends JFrame {
         drawingView = new DrawingView(appService);
         drawingView.setPreferredSize(new Dimension(2000, 1500)); // Large canvas size
         drawingScrollPane = new JScrollPane(drawingView);
-        // Configure scroll pane behavior
         drawingScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         drawingScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         drawingScrollPane.getVerticalScrollBar().setUnitIncrement(20); // Faster scrolling
@@ -87,7 +82,7 @@ public class DrawingFrame extends JFrame {
 
         // --- Link Controllers to Components (AFTER creation) ---
         drawingView.setDrawingController(drawingController); // Link View -> Controller
-        drawingController.setDrawingView(drawingView);     // Link Controller -> View
+        drawingController.setDrawingView(drawingView);     // Link Controller -> View (This adds listeners)
         drawingController.setPropertySheet(propertySheet); // Link Controller -> PropertySheet
         actionListener.setToolBar(drawingToolBar);
         actionListener.setDrawingController(drawingController); // Link controllers
@@ -109,7 +104,7 @@ public class DrawingFrame extends JFrame {
                 if (drawingMenuBar != null) drawingMenuBar.updateUndoRedoState(canUndo, canRedo);
                 // Populate table AFTER command finishes to reflect new state
                 if (propertySheet != null) propertySheet.populateTable(appService);
-                if (drawingView != null) drawingView.repaint();
+                if (drawingView != null) drawingView.repaint(); // Ensure view repaints after command
             };
             if (SwingUtilities.isEventDispatchThread()) {
                 updateTask.run();
@@ -119,7 +114,6 @@ public class DrawingFrame extends JFrame {
         });
 
         // --- Final Frame Configuration ---
-        // Set size AFTER adding components if not using pack()
         setSize(1200, 800);
         setMinimumSize(new Dimension(900, 600));
         setLocationRelativeTo(null); // Center on screen
@@ -131,6 +125,8 @@ public class DrawingFrame extends JFrame {
             if (propertySheet != null) {
                 propertySheet.populateTable(appService);
             }
+            // Initial repaint might be needed if LookAndFeel changes things
+            if (drawingView != null) drawingView.repaint();
         });
 
     }
@@ -142,24 +138,26 @@ public class DrawingFrame extends JFrame {
         // 1. Create the PropertySheet instance (constructor builds structure)
         propertySheet = new PropertySheet(options);
 
-        // 2. Add the correct event listener instance
-        propertySheet.addEventListener(new PropertyEventListener(appService)); // Use the command-handling listener
+        // 2. Add the correct event listener instance, PASSING the propertySheet
+        // <<<--- MODIFIED LISTENER INSTANTIATION --->>>
+        propertySheet.addEventListener(new PropertyEventListener(appService, propertySheet));
 
         // 3. Create the JScrollPane *containing* the propertySheet
         propertyScrollPane = new JScrollPane(propertySheet);
         propertyScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        propertyScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        propertyScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER); // Usually not needed
 
         // 4. Set preferred and minimum size on the SCROLL PANE
         propertyScrollPane.setPreferredSize(new Dimension(280, 500)); // Hint for BorderLayout
         propertyScrollPane.setMinimumSize(new Dimension(220, 300));   // Minimum width for the panel
 
         // Optional: Set viewport background
-        propertyScrollPane.getViewport().setBackground(Color.WHITE);
+        propertyScrollPane.getViewport().setBackground(Color.WHITE); // Or match frame background
     }
 
     // Main method for testing
     public static void main(String[] args) {
+        // Apply Look and Feel *before* creating any components
         try {
             for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -172,6 +170,7 @@ public class DrawingFrame extends JFrame {
             catch (Exception ex) { System.err.println("Failed to set LookAndFeel."); }
         }
 
+        // Create and show the frame on the EDT
         SwingUtilities.invokeLater(() -> {
             DrawingFrame frame = new DrawingFrame();
             frame.setVisible(true);

@@ -1,4 +1,3 @@
-// package com.gabriel.draw.component; // Make sure package declaration is correct
 package com.gabriel.draw.component;
 
 
@@ -17,11 +16,12 @@ import javax.swing.*;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel; // <<<--- ADDED IMPORT
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.lang.reflect.Field; // Keep reflection
+//import java.lang.reflect.Field; // Keep reflection if used elsewhere, remove if not
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -44,7 +44,8 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
     ));
     // --- End Items ---
 
-    private volatile boolean isPopulating = false; // Flag to prevent event loops
+    private volatile boolean isPopulating = false; // Flag to prevent event loops during full population
+    private volatile boolean isUpdatingFromController = false; // <<<--- NEW FLAG
     private boolean editingEnabled = false; // Controls general editability
 
 
@@ -92,6 +93,7 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
         } catch (Exception e) {
             System.err.println("Error adding internal property '" + prop.getName() + "': " + e.getMessage());
             e.printStackTrace();
+            // Add a row indicating error to maintain row count consistency
             propertyModel.addRow(new Object[]{prop.getName(), "[Add Error]"});
         }
     }
@@ -105,12 +107,12 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
             propertyColumn.setPreferredWidth(100);
             propertyColumn.setMinWidth(80);
             TableColumn valueColumn = getColumnModel().getColumn(1);
-            valueColumn.setPreferredWidth(160);
+            valueColumn.setPreferredWidth(160); // Adjusted for potentially wider values
             valueColumn.setMinWidth(100);
         } catch (Exception e) {
             System.err.println("Error configuring columns: " + e.getMessage());
         }
-        setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
+        setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN); // Allow last column to take extra space
     }
 
     // Override clear to rebuild the structure if needed (e.g., dynamic properties)
@@ -140,16 +142,21 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
                 TableCellEditor editor = getCellEditor();
                 if (editor != null) editor.stopCellEditing();
             }
+            // Use invokeLater to ensure table redraw happens after current event processing
             SwingUtilities.invokeLater(() -> {
                 if (getModel() != null) {
                     ((PropertyModel) getModel()).fireTableDataChanged(); // Redraw cells
                 }
             });
         } else {
-            repaint();
+            repaint(); // Fallback repaint
         }
     }
 
+    // <<<--- NEW GETTER for the flag --->>>
+    public boolean isUpdatingFromController() {
+        return isUpdatingFromController;
+    }
 
     // *** POPULATE TABLE: Updates VALUES only, called frequently ***
     public void populateTable(AppService appService) {
@@ -181,52 +188,58 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
             Color currentStartColor = shapeSelected ? shape.getStartColor() : drawing.getStartColor();
             Color currentEndColor = shapeSelected ? shape.getEndColor() : drawing.getEndColor();
             boolean currentUseGradient = shapeSelected ? shape.isUseGradient() : drawing.isUseGradient();
-            boolean currentVisible = shapeSelected ? shape.isVisible() : true;
+            boolean currentVisible = shapeSelected ? shape.isVisible() : true; // Default to true if no shape
             int currentX = shapeSelected && shape.getLocation() != null ? shape.getLocation().x : 0;
             int currentY = shapeSelected && shape.getLocation() != null ? shape.getLocation().y : 0;
             int currentWidth = shapeSelected ? shape.getWidth() : 0;
             int currentHeight = shapeSelected ? shape.getHeight() : 0;
             int currentThickness = shapeSelected ? shape.getThickness() : drawing.getThickness();
 
-            Font fontToUse = drawing.getFont();
+            Font fontToUse = drawing.getFont(); // Start with drawing default
             String textToUse = "";
             boolean isTextShape = "Text".equals(objectType);
 
             if (shapeSelected) {
                 if (isTextShape) {
-                    fontToUse = shape.getFont() != null ? shape.getFont() : fontToUse;
+                    fontToUse = shape.getFont() != null ? shape.getFont() : fontToUse; // Prefer shape's font
                     textToUse = shape.getText() != null ? shape.getText() : "";
-                } else {
-                    fontToUse = drawing.getFont(); // Use drawing font for non-text shapes
                 }
-            } else {
-                fontToUse = drawing.getFont(); // Use drawing font when nothing selected
+                // For non-text shapes, font properties reflect the drawing default
             }
-            String currentFontFamily = fontToUse != null ? fontToUse.getFamily() : "SansSerif";
-            int currentFontStyle = fontToUse != null ? fontToUse.getStyle() : Font.PLAIN;
-            int currentFontSize = fontToUse != null ? fontToUse.getSize() : 12;
+            // If no shape selected, fontToUse remains the drawing default
+
+            // Handle potential null font before accessing properties
+            String currentFontFamily = "SansSerif";
+            int currentFontStyle = Font.PLAIN;
+            int currentFontSize = 12;
+            if (fontToUse != null) {
+                currentFontFamily = fontToUse.getFamily();
+                currentFontStyle = fontToUse.getStyle();
+                currentFontSize = fontToUse.getSize();
+            }
+
 
             // --- Update Property Objects AND Table Model Visually ---
-            // Use update helpers that manage EDT safety and prevent loops
-            updateStringProperty("Object Type", objectType);
-            updateColorProperty("Fore Color", currentForeColor);
-            updateColorProperty("Fill Color", currentFillColor);
-            updateColorProperty("Start Color", currentStartColor);
-            updateColorProperty("End Color", currentEndColor);
-            updateBooleanProperty("Use Gradient", currentUseGradient);
-            updateBooleanProperty("Visible", currentVisible);
+            // Use the direct update helpers to avoid triggering listeners during population
+            updateStringPropertyDirect("Object Type", objectType);
+            updateColorPropertyDirect("Fore Color", currentForeColor);
+            updateColorPropertyDirect("Fill Color", currentFillColor);
+            updateColorPropertyDirect("Start Color", currentStartColor);
+            updateColorPropertyDirect("End Color", currentEndColor);
+            updateBooleanPropertyDirect("Use Gradient", currentUseGradient);
+            updateBooleanPropertyDirect("Visible", currentVisible);
 
-            // *** Explicitly update X, Y, Width, Height using helpers ***
-            updateIntegerProperty("X Location", currentX);
-            updateIntegerProperty("Y Location", currentY);
-            updateIntegerProperty("Width", currentWidth);
-            updateIntegerProperty("Height", currentHeight);
+            // *** Use integer helper for X, Y, Width, Height ***
+            updateIntegerPropertyDirect("X Location", currentX);
+            updateIntegerPropertyDirect("Y Location", currentY);
+            updateIntegerPropertyDirect("Width", currentWidth);
+            updateIntegerPropertyDirect("Height", currentHeight);
 
-            updateIntegerProperty("Line Thickness", currentThickness);
-            updateStringProperty("Text", textToUse);
-            updateStringProperty("Font Family", currentFontFamily);
-            updateSelectionProperty("Font Style", currentFontStyle); // Use updateSelectionProperty
-            updateIntegerProperty("Font Size", currentFontSize);
+            updateIntegerPropertyDirect("Line Thickness", currentThickness);
+            updateStringPropertyDirect("Text", textToUse);
+            updateStringPropertyDirect("Font Family", currentFontFamily);
+            updateSelectionPropertyDirect("Font Style", currentFontStyle); // Use direct selection update
+            updateIntegerPropertyDirect("Font Size", currentFontSize);
 
         } catch (Exception ex) {
             System.err.println("Exception during PropertySheet.populateTable value updates:");
@@ -239,9 +252,12 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
 
 
     // --- Helper methods to UPDATE values directly in properties and the table model ---
-    // Core update logic with EDT safety
-    private void updateValueInModel(String name, Object value) {
-        if (isPopulating || CommandService.isExecutingCommand()) {
+    // Core update logic with EDT safety (Used by populateTable and real-time updates)
+    // Renamed slightly to differentiate from potential public update methods
+    private void updatePropertyDirectly(String name, Object value) {
+        // Prevent updates if the sheet itself is populating OR if a command is running
+        // Allow updates initiated by the controller (isUpdatingFromController flag)
+        if (isPopulating || (!isUpdatingFromController && CommandService.isExecutingCommand())) {
             return; // Prevent loops
         }
 
@@ -260,37 +276,56 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
             // Only proceed if value changed
             if (!Objects.equals(currentModelValue, value) || !Objects.equals(currentPropertyValue, value)) {
 
-                // Basic type check
+                // Basic type check/conversion (important for integer/boolean wrappers)
                 boolean typesCompatible = true;
+                Object valueToSet = value; // Use this potentially converted value
+
                 if (p.getValue() != null && value != null && !p.getValue().getClass().isInstance(value)) {
+                    // Allow Integer property to accept Integer value, etc.
                     if (!((p.getValue() instanceof Integer && value instanceof Integer) ||
-                            (p.getValue() instanceof Boolean && value instanceof Boolean)
+                            (p.getValue() instanceof Boolean && value instanceof Boolean) ||
+                            (p.getValue() instanceof Color && value instanceof Color)
                             // Add other primitive/wrapper checks if needed
                     )) {
                         typesCompatible = false;
+                        System.err.println("Type mismatch prevented updateValueInModel for '" + name + "'. Expected " + p.getValue().getClass() + " but got " + value.getClass());
                     }
                 }
 
+
                 if (typesCompatible) {
                     // 1. Update Property object
-                    ((Property<Object>) p).setValue(value);
+                    try {
+                        ((Property<Object>) p).setValue(valueToSet);
+                    } catch (ClassCastException e) {
+                        System.err.println("Error casting value in updatePropertyDirectly (setValue) for " + name + ": " + e);
+                        return; // Stop if type is wrong during setting
+                    }
+
 
                     // 2. Update table model on EDT
                     Runnable updateModelTask = () -> {
-                        if (isEditing() && getEditingRow() == finalRowIndex && getEditingColumn() == 1) {
-                            TableCellEditor editor = getCellEditor(finalRowIndex, 1);
-                            if (editor != null) editor.stopCellEditing();
-                        }
-                        if (propertyModel != null && finalRowIndex < propertyModel.getRowCount()) {
-                            propertyModel.setValueAt(value, finalRowIndex, 1); // Update cell
+                        TableModel model = getModel(); // Get model inside EDT task
+                        if (model instanceof PropertyModel && finalRowIndex < model.getRowCount()) {
+                            // Check if the cell is currently being edited *before* stopping it
+                            if (isEditing() && getEditingRow() == finalRowIndex && getEditingColumn() == 1) {
+                                TableCellEditor editor = getCellEditor(finalRowIndex, 1);
+                                if (editor != null) {
+                                    // Attempt to stop editing gracefully
+                                    if (!editor.stopCellEditing()) {
+                                        // If stop fails, cancel editing to prevent inconsistent state
+                                        editor.cancelCellEditing();
+                                    }
+                                }
+                            }
+                            // Directly set the value in the table model
+                            ((PropertyModel) model).setValueAt(valueToSet, finalRowIndex, 1);
                         }
                     };
 
                     if (SwingUtilities.isEventDispatchThread()) { updateModelTask.run(); }
                     else { SwingUtilities.invokeLater(updateModelTask); }
 
-                } else {
-                    System.err.println("Type mismatch prevented updateValueInModel for '" + name + "'");
                 }
             }
         } catch (Exception e) {
@@ -299,59 +334,74 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
         }
     }
 
-    // --- Specific type update helpers ---
-    private void updateStringProperty(String name, String value) { updateValueInModel(name, value != null ? value : ""); }
-    private void updateIntegerProperty(String name, int value) { updateValueInModel(name, value); }
-    private void updateBooleanProperty(String name, boolean value) { updateValueInModel(name, value); }
-    private void updateColorProperty(String name, Color value) { updateValueInModel(name, value != null ? value : Color.GRAY); }
+    // --- Specific type update helpers FOR POPULATION (call direct update) ---
+    private void updateStringPropertyDirect(String name, String value) { updatePropertyDirectly(name, value != null ? value : ""); }
+    private void updateIntegerPropertyDirect(String name, int value) { updatePropertyDirectly(name, value); }
+    private void updateBooleanPropertyDirect(String name, boolean value) { updatePropertyDirectly(name, value); }
+    private void updateColorPropertyDirect(String name, Color value) { updatePropertyDirectly(name, value != null ? value : Color.GRAY); }
 
-    // Special handler for SelectionProperty (like Font Style)
-    private void updateSelectionProperty(String name, Object valueToSelect) {
+
+    // <<<--- NEW: Specific update helper FOR REAL-TIME CONTROLLER UPDATES --->>>
+    // Public method called by DrawingController during drag
+    public void updateIntegerProperty(String name, int value) {
+        updatePropertyDirectly(name, value);
+    }
+    // Add similar public methods if other types need real-time updates from controller
+    // public void updateStringProperty(String name, String value) { updatePropertyDirectly(name, value); }
+
+
+    // Special handler for SelectionProperty (like Font Style) - Direct Update for Population
+    private void updateSelectionPropertyDirect(String name, Object valueToSelect) {
         Property<?> p = propertyMap.get(name);
         if (!(p instanceof SelectionProperty)) return;
         SelectionProperty<?> sp = (SelectionProperty<?>) p;
         Item<?> matchingItem = null;
 
+        // Find the Item whose *value* matches the target value
         for (Object itemObj : sp.getItems()) {
             if (itemObj instanceof Item) {
                 Item<?> item = (Item<?>) itemObj;
                 if (Objects.equals(item.getValue(), valueToSelect)) {
-                    matchingItem = item; break;
+                    matchingItem = item;
+                    break;
                 }
             }
         }
-        Object valueForProperty = (matchingItem != null) ? matchingItem.getValue() : null;
+        Object valueForProperty = (matchingItem != null) ? matchingItem.getValue() : sp.getItems().get(0).getValue(); // Fallback value
 
-        // 1. Update underlying property (if needed)
-        if (!isPopulating && !CommandService.isExecutingCommand()) {
-            if (!Objects.equals(p.getValue(), valueForProperty)) {
-                try { ((Property<Object>) p).setValue(valueForProperty); }
-                catch (ClassCastException cce) { /* Handle error */ }
-            }
+        // 1. Update underlying property
+        if (!Objects.equals(p.getValue(), valueForProperty)) {
+            try { ((Property<Object>) p).setValue(valueForProperty); }
+            catch (ClassCastException cce) { System.err.println("Cast Error updating Sel Prop: "+cce); }
         }
 
-        // 2. Update the model (needs the Item object), ensuring EDT safety
+
+        // 2. Update the model (needs the Item object itself), ensuring EDT safety
         int rowIndex = getPropertyRowIndex(name);
         if (rowIndex == -1) return;
 
         final int finalRowIndex = rowIndex;
-        final Item<?> finalMatchingItem = matchingItem;
+        // Use the found item or a default if not found (shouldn't happen with valid values)
+        final Item<?> itemToSetInModel = (matchingItem != null) ? matchingItem : sp.getItems().get(0);
 
-        Object currentModelValue = (propertyModel != null && finalRowIndex < propertyModel.getRowCount()) ? propertyModel.getValueAt(finalRowIndex, 1) : null;
 
-        if (!Objects.equals(currentModelValue, finalMatchingItem)) {
-            Runnable updateModelTask = () -> {
-                if (isEditing() && getEditingRow() == finalRowIndex && getEditingColumn() == 1) {
-                    TableCellEditor editor = getCellEditor(finalRowIndex, 1);
-                    if (editor != null) editor.stopCellEditing();
+        Runnable updateModelTask = () -> {
+            TableModel model = getModel();
+            if (model instanceof PropertyModel && finalRowIndex < model.getRowCount()) {
+                Object currentModelValue = model.getValueAt(finalRowIndex, 1);
+                // Only update model if the Item object itself is different
+                if (!Objects.equals(currentModelValue, itemToSetInModel)) {
+                    if (isEditing() && getEditingRow() == finalRowIndex && getEditingColumn() == 1) {
+                        TableCellEditor editor = getCellEditor(finalRowIndex, 1);
+                        if (editor != null) editor.stopCellEditing(); // Stop editing before model update
+                    }
+                    ((PropertyModel) model).setValueAt(itemToSetInModel, finalRowIndex, 1); // Set Item in model
                 }
-                if (propertyModel != null && finalRowIndex < propertyModel.getRowCount()) {
-                    propertyModel.setValueAt(finalMatchingItem, finalRowIndex, 1); // Set Item in model
-                }
-            };
-            if (SwingUtilities.isEventDispatchThread()) updateModelTask.run();
-            else SwingUtilities.invokeLater(updateModelTask);
-        }
+            }
+        };
+        if (SwingUtilities.isEventDispatchThread()) updateModelTask.run();
+        else SwingUtilities.invokeLater(updateModelTask);
+
     }
 
 
@@ -362,7 +412,10 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
             try {
                 Object nameInRow = propertyModel.getValueAt(i, 0);
                 if (name.equals(nameInRow)) return i;
-            } catch (Exception e) { return -1; } // Error accessing model
+            } catch (Exception e) {
+                System.err.println("Error getting row index for "+name+": "+e);
+                return -1;
+            } // Error accessing model
         }
         return -1; // Not found
     }
@@ -370,10 +423,16 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
     // --- isCellEditable logic --- (Adjusted for structure)
     @Override
     public boolean isCellEditable(int row, int column) {
-        if (column != 1) return false;
-        if (row < 0 || row >= getRowCount()) return false;
+        if (column != 1) return false; // Only value column is editable
+        if (row < 0 || row >= getRowCount() || propertyModel == null) return false;
 
-        Object propNameObj = getValueAt(row, 0);
+        Object propNameObj;
+        try {
+            propNameObj = propertyModel.getValueAt(row, 0);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            return false; // Invalid row index
+        }
+
         if (!(propNameObj instanceof String)) return false;
         String propName = (String) propNameObj;
 
@@ -389,7 +448,7 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
         }
 
         // --- Shape-Specific Editability (when editingEnabled is true) ---
-        String currentObjectType = getStringValueFromModel("Object Type");
+        String currentObjectType = getStringValueFromModel("Object Type"); // Use helper
         boolean isTextShape = "Text".equals(currentObjectType);
 
         // Text/Font properties only editable for Text shapes
@@ -398,7 +457,10 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
             return false;
         }
 
-        // Other properties are editable when a shape is selected
+        // Gradient properties might depend on Fill being used? (Optional rule)
+        // if (!currentUseGradient && ("Start Color".equals(propName) || "End Color".equals(propName))) return false;
+
+        // Other properties are generally editable when a shape is selected
         return true; // Includes X, Y, Width, Height, Colors, Visible, etc.
     }
 
@@ -408,30 +470,60 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
         int rowIndex = getPropertyRowIndex(propertyName);
         if (rowIndex != -1 && propertyModel != null && rowIndex < propertyModel.getRowCount()) {
             Object val = propertyModel.getValueAt(rowIndex, 1);
+            // Handle Item case for SelectionProperty
+            if (val instanceof Item) {
+                return ((Item<?>) val).getDescription(); // Or .getValue().toString() depending on need
+            }
             return (val != null) ? val.toString() : null;
         }
         return null;
     }
 
-    // --- prepareRenderer / prepareEditor --- (Visuals for disabled cells - unchanged)
+    // --- prepareRenderer / prepareEditor --- (Visuals for disabled cells - unchanged from original)
     @Override
     public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
         Component c = super.prepareRenderer(renderer, row, column);
         if (c == null) return null;
         boolean editable = isCellEditable(row, column);
-        boolean rowIsSelectedInTable = isRowSelected(row);
+        boolean rowIsSelectedInTable = isRowSelected(row); // Table selection, not canvas selection
         Color background; Color foreground;
+
+        // Determine background and foreground based on table selection and cell editability
         if (rowIsSelectedInTable) {
-            background = getSelectionBackground(); foreground = getSelectionForeground();
-            if (!editable && column == 1) { background = getSelectionBackground().darker(); foreground = Color.LIGHT_GRAY; }
-        } else {
-            if (!editable && column == 1) { background = getBackground().darker(); foreground = Color.GRAY; }
-            else { background = getBackground(); foreground = getForeground(); }
+            background = getSelectionBackground();
+            foreground = getSelectionForeground();
+            if (!editable && column == 1) { // Value column, not editable, selected row
+                background = getSelectionBackground().darker(); // Darker background for disabled selected cell
+                foreground = Color.LIGHT_GRAY; // Lighter text for disabled selected cell
+            }
+        } else { // Row not selected in the table
+            background = getBackground(); // Default background
+            foreground = getForeground(); // Default foreground
+            if (!editable && column == 1) { // Value column, not editable, not selected row
+                background = getBackground().darker(); // Slightly darker background for disabled cell
+                foreground = Color.GRAY; // Gray text for disabled cell
+            }
         }
-        c.setBackground(background); c.setForeground(foreground);
-        c.setEnabled(editable || column == 0);
-        if (c instanceof JCheckBox) { ((JCheckBox)c).setOpaque(true); ((JCheckBox)c).setBackground(background); ((JCheckBox)c).setEnabled(editable); }
-        if (c instanceof JLabel && !editable && column == 1 && !rowIsSelectedInTable) { c.setForeground(Color.GRAY); }
+
+        c.setBackground(background);
+        c.setForeground(foreground);
+        // Ensure component reflects enabled state visually
+        c.setEnabled(editable || column == 0); // Property name column is always enabled visually
+
+        // Special handling for checkboxes
+        if (c instanceof JCheckBox) {
+            JCheckBox checkBox = (JCheckBox) c;
+            checkBox.setOpaque(true); // Needed for background color to show reliably
+            checkBox.setBackground(background);
+            checkBox.setEnabled(editable); // Checkbox itself should match editability
+        }
+        // Special handling for labels (often used as renderers for non-editable fields)
+        else if (c instanceof JLabel && !editable && column == 1 && !rowIsSelectedInTable) {
+            // Make text slightly dimmer for disabled, non-selected cells
+            c.setForeground(Color.GRAY);
+        }
+
+
         return c;
     }
 
@@ -440,24 +532,50 @@ public class PropertySheet extends PropertyPanel { // Extends PropertyPanel
         Component c = super.prepareEditor(editor, row, column);
         if (c == null) return null;
         boolean editable = isCellEditable(row, column);
-        c.setEnabled(editable);
-        if (!editable) { c.setBackground(getBackground().darker()); c.setForeground(Color.GRAY); }
-        else { c.setBackground(getSelectionBackground()); c.setForeground(getSelectionForeground()); }
+        c.setEnabled(editable); // Editor component should only be enabled if editable
+
+        // Set background/foreground for the editor component
+        if (!editable) {
+            // Should not happen if isCellEditable returns false, but as a fallback
+            c.setBackground(getBackground().darker());
+            c.setForeground(Color.GRAY);
+        } else {
+            // Use selection colors for the active editor for better visibility
+            c.setBackground(getSelectionBackground());
+            c.setForeground(getSelectionForeground());
+            // For text fields, ensure selected text is visible
+            if (c instanceof JTextField) {
+                ((JTextField) c).setSelectionColor(getForeground());
+                ((JTextField) c).setSelectedTextColor(getBackground());
+            }
+        }
         return c;
     }
 
-    // --- Tooltip --- (Unchanged)
+
+    // --- Tooltip --- (Unchanged from original)
     @SuppressWarnings("unchecked")
     @Override
     public String getToolTipText(java.awt.event.MouseEvent event) {
         int row = rowAtPoint(event.getPoint()); int col = columnAtPoint(event.getPoint());
         if (row >= 0 && col >= 0 && row < getRowCount() && properties != null && row < properties.size()) {
-            if (col == 0) { Object p = getValueAt(row, 0); if (p instanceof String) return (String) p; }
-            else if (col == 1) { Object v = getValueAt(row, 1); Property<?> p = properties.get(row);
-                if (p instanceof SelectionProperty && v instanceof Item) return ((Item<?>) v).getDescription();
-                if (v != null) return v.toString();
+            if (col == 0) { // Tooltip for property name column
+                Object pName = getValueAt(row, 0);
+                if (pName instanceof String) return (String) pName;
+            }
+            else if (col == 1) { // Tooltip for value column
+                Object v = getValueAt(row, 1);
+                Property<?> p = properties.get(row); // Get the underlying Property object
+                // If it's a SelectionProperty and the value is an Item, show the Item's description
+                if (p instanceof SelectionProperty && v instanceof Item) {
+                    return ((Item<?>) v).getDescription();
+                }
+                // Otherwise, just show the toString() representation of the value
+                if (v != null) {
+                    return v.toString();
+                }
             }
         }
-        return super.getToolTipText(event);
+        return super.getToolTipText(event); // Default tooltip behavior
     }
 }
