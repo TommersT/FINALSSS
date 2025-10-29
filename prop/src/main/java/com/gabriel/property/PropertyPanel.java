@@ -1,11 +1,12 @@
 package com.gabriel.property;
 
-import com.gabriel.property.cell.*;
+import com.gabriel.property.cell.AbstractCellComponent;
 import com.gabriel.property.event.EventDispatcher;
 import com.gabriel.property.event.PropertyEventListener;
-import com.gabriel.property.property.*;
 import com.gabriel.property.exception.PropertyNotSupportedException;
+import com.gabriel.property.property.*;
 import com.gabriel.property.property.selection.SelectionProperty;
+import com.gabriel.property.cell.*; // Import cell components
 
 import javax.swing.*;
 import javax.swing.table.TableCellEditor;
@@ -14,140 +15,134 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PropertyPanel extends JTable {
-    private PropertyOptions options;
-    private PropertyModel propertyModel;
-    private EventDispatcher eventDispatcher;
-    private List<AbstractCellComponent> cellComponents;
-    private List<Property> properties;
+    protected PropertyOptions options;
+    protected PropertyModel propertyModel;
+    protected EventDispatcher eventDispatcher;
+    protected List<AbstractCellComponent> cellComponents;
+    protected List<Property> properties;
+    private SelectionCellComponent selectionCellComponent; // Keep if needed
 
-    private SelectionCellComponent selectionCellComponent;
-    /**
-     * @param options Options object for the property sheet
-     */
     public PropertyPanel(PropertyOptions options) {
         this.options = options;
+        // Create the model FIRST
         this.propertyModel = new PropertyModel(options.getHeaders());
+        // Set the model IMMEDIATELY
+        setModel(propertyModel);
+
+        // Initialize other components
         this.eventDispatcher = new EventDispatcher();
         this.cellComponents = new ArrayList<>();
         this.properties = new ArrayList<>();
 
-        // Set necessary properties
-        setModel(propertyModel);
+        // Configure table appearance AFTER setting the model
         setRowHeight(options.getRowHeight());
         getTableHeader().setReorderingAllowed(false);
+        setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        // Optional: setAutoResizeMode(JTable.AUTO_RESIZE_OFF); // If columns need specific widths
     }
 
-    /**
-     * Add a new property to the table with a custom cell component.
-     *
-     * @param property      Property
-     * @param cellComponent Custom cell component
-     */
+    // --- Core method to add a row structure ---
     public void addProperty(Property property, AbstractCellComponent cellComponent) {
+        if (propertyModel == null) {
+            System.err.println("PropertyPanel.addProperty: propertyModel is null!");
+            return;
+        }
+        // Add row data
         propertyModel.addRow(new Object[]{property.getName(), property.getValue()});
+        // Store references needed for rendering/editing
         cellComponents.add(cellComponent);
         properties.add(property);
+        // Initialize the cell
         cellComponent.init(options, eventDispatcher);
-        eventDispatcher.dispatchPropertyAddedEvent(property);
+        // Optional: dispatch event
+        // eventDispatcher.dispatchPropertyAddedEvent(property);
     }
 
-    /**
-     * Add a standard property. If the property is not standard, i.e. there does not exist a standard
-     * cell component, a {@code PropertyNotSupportedException} is thrown.
-     *
-     * @param property Standard property
-     * @throws PropertyNotSupportedException If {@code property} is not a standard property
-     */
+    // --- Convenience method using default cell components ---
     public void addProperty(Property property) throws PropertyNotSupportedException {
+        AbstractCellComponent cellComp = createCellComponent(property);
+        addProperty(property, cellComp);
+    }
+
+    // --- Helper to create default cell components ---
+    private AbstractCellComponent createCellComponent(Property property) throws PropertyNotSupportedException {
         if (property instanceof IntegerProperty) {
-            addProperty(property, new IntegerCellComponent((IntegerProperty) property));
+            return new IntegerCellComponent((IntegerProperty) property);
         } else if (property instanceof LongProperty) {
-            addProperty(property, new LongCellComponent((LongProperty) property));
+            return new LongCellComponent((LongProperty) property);
         } else if (property instanceof DoubleProperty) {
-            addProperty(property, new DoubleCellComponent((DoubleProperty) property));
+            return new DoubleCellComponent((DoubleProperty) property);
         } else if (property instanceof FloatProperty) {
-            addProperty(property, new FloatCellComponent((FloatProperty) property));
+            return new FloatCellComponent((FloatProperty) property);
         } else if (property instanceof StringProperty) {
-            addProperty(property, new StringCellComponent((StringProperty) property));
+            return new StringCellComponent((StringProperty) property);
         } else if (property instanceof ColorProperty) {
-            addProperty(property, new ColorCellComponent((ColorProperty) property));
+            return new ColorCellComponent((ColorProperty) property);
         } else if (property instanceof BooleanProperty) {
-            addProperty(property, new BooleanCellComponent((BooleanProperty) property));
+            return new BooleanCellComponent((BooleanProperty) property);
         } else if (property instanceof SelectionProperty) {
             selectionCellComponent = new SelectionCellComponent((SelectionProperty) property);
-            addProperty(property, selectionCellComponent);
+            return selectionCellComponent;
         } else if (property instanceof ActionProperty) {
-            addProperty(property, new ActionCellComponent((ActionProperty) property));
+            return new ActionCellComponent((ActionProperty) property);
         } else {
             throw new PropertyNotSupportedException(property);
         }
     }
 
-    /**
-     * Removes the property from the sheet.
-     *
-     * @param property Property
-     */
+    // --- Methods for removing properties ---
     public void removeProperty(Property property) {
-        removeProperty(properties.indexOf(property));
+        int index = properties.indexOf(property);
+        if (index != -1) {
+            removeProperty(index);
+        }
     }
 
-    /**
-     * Removes a row from the table.
-     *
-     * @param row Row index
-     */
     public void removeProperty(int row) {
-        cellComponents.remove(row);
-        properties.remove(row);
-        propertyModel.removeRow(row);
+        if (row >= 0 && row < properties.size()) {
+            cellComponents.remove(row);
+            properties.remove(row);
+            propertyModel.removeRow(row);
+        }
     }
 
-    /**
-     * Removes all components from the table
-     */
+    // --- Clear method ---
+    // Subclasses may override this to re-initialize structure
     public void clear() {
-        propertyModel.clear();
+        if (propertyModel != null) {
+            propertyModel.clear(); // Uses efficient setRowCount(0)
+        }
         cellComponents.clear();
         properties.clear();
     }
 
-    /**
-     * Add a new event listener.
-     *
-     * @param eventListener Event listener
-     */
+    // --- Event Listener methods ---
     public void addEventListener(PropertyEventListener eventListener) {
         eventDispatcher.addEventListener(eventListener);
     }
 
-    /**
-     * Remove an event listener
-     *
-     * @param eventListener Event listener
-     */
     public void removeEventListener(PropertyEventListener eventListener) {
         eventDispatcher.removeEventListener(eventListener);
     }
 
+    // --- Cell Editor/Renderer delegation ---
     @Override
     public TableCellEditor getCellEditor(int row, int column) {
-        if (column == 1) {
+        if (column == 1 && row >= 0 && row < cellComponents.size()) {
             return cellComponents.get(row);
         }
-
         return super.getCellEditor(row, column);
     }
 
     @Override
     public TableCellRenderer getCellRenderer(int row, int column) {
-        if (column == 1) {
+        if (column == 1 && row >= 0 && row < cellComponents.size()) {
             return cellComponents.get(row);
         }
-
         return super.getCellRenderer(row, column);
     }
-    public SelectionCellComponent getSelectionCellComponent(){
+
+    public SelectionCellComponent getSelectionCellComponent() {
         return selectionCellComponent;
     }
 }

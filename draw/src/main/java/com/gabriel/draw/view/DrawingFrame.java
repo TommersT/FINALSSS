@@ -7,16 +7,17 @@ import com.gabriel.draw.controller.DrawingWindowController;
 import com.gabriel.draw.service.DrawingAppService;
 import com.gabriel.draw.service.DrawingCommandAppService;
 import com.gabriel.drawfx.service.AppService;
-import com.gabriel.drawfx.command.CommandService;
+import com.gabriel.drawfx.command.CommandService; // Keep CommandService import
 import com.gabriel.property.PropertyOptions;
-import com.gabriel.draw.controller.PropertyEventListener;
+import com.gabriel.draw.controller.PropertyEventListener; // Keep this listener import
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent; // <<< ADDED Missing Import
 
 public class DrawingFrame extends JFrame {
 
-    // Keep fields package-private or private unless needed otherwise
+    // <<< --- RESTORED FIELD DECLARATIONS --- >>>
     DrawingAppService drawingAppService; // Base service implementation
     AppService appService; // Command-wrapped service
     Container pane;
@@ -30,9 +31,11 @@ public class DrawingFrame extends JFrame {
     DrawingStatusPanel drawingStatusPanel;
     DrawingWindowController drawingWindowController;
     JScrollPane propertyScrollPane; // Keep reference
+    // <<< --- END RESTORED FIELD DECLARATIONS --- >>>
 
     public DrawingFrame() {
         setTitle("GoDraw Application");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Set early
 
         // --- Model and Service Initialization ---
         drawingAppService = new DrawingAppService();
@@ -40,123 +43,126 @@ public class DrawingFrame extends JFrame {
 
         // --- Basic Frame Setup ---
         pane = getContentPane();
-        setLayout(new BorderLayout(5, 5)); // Use BorderLayout
+        // Use BorderLayout with gaps
+        setLayout(new BorderLayout(5, 5));
+        // Add padding around the entire frame content
+        ((JPanel) pane).setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // --- Controller Initialization ---
         actionListener = new ActionController(appService);
-        drawingController = new DrawingController(appService, null); // View set later
+        // Defer setting view/toolbar/propertySheet until they are created
+        drawingController = new DrawingController(appService, null);
         drawingWindowController = new DrawingWindowController(appService);
 
-        // --- UI Component Initialization ---
+        // --- UI Component Initialization & Layout (Order Matters) ---
+
+        // 1. Menu Bar
         drawingMenuBar = new DrawingMenuBar(actionListener);
         setJMenuBar(drawingMenuBar);
 
+        // 2. Tool Bar (North)
         drawingToolBar = new DrawingToolBar(actionListener);
-        actionListener.setToolBar(drawingToolBar);
-        actionListener.setDrawingController(drawingController); // Link controllers
+        pane.add(drawingToolBar, BorderLayout.NORTH);
 
+        // 3. Status Bar (South)
+        drawingStatusPanel = new DrawingStatusPanel();
+        pane.add(drawingStatusPanel, BorderLayout.SOUTH);
+        drawingController.setDrawingStatusPanel(drawingStatusPanel); // Link controller
+
+        // 4. Drawing View & Scroll Pane (Center)
         drawingView = new DrawingView(appService);
-        drawingView.setDrawingController(drawingController); // Link View -> Controller
-        drawingController.setDrawingView(drawingView);     // Link Controller -> View
-
-        drawingView.setPreferredSize(new Dimension(2000, 1500)); // Canvas size
+        drawingView.setPreferredSize(new Dimension(2000, 1500)); // Large canvas size
         drawingScrollPane = new JScrollPane(drawingView);
+        // Configure scroll pane behavior
         drawingScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         drawingScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        drawingScrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        drawingScrollPane.getHorizontalScrollBar().setUnitIncrement(16);
-
-
-        drawingStatusPanel = new DrawingStatusPanel();
-        drawingController.setDrawingStatusPanel(drawingStatusPanel); // Link Controller -> StatusPanel
-
-        // --- Property Sheet Initialization & Layout ---
-        buildPropertyTable(); // Creates and fully configures 'propertySheet'
-        drawingController.setPropertySheet(propertySheet); // Link Controller -> PropertySheet
-
-        // Create the JScrollPane AFTER propertySheet is fully built and configured
-        propertyScrollPane = new JScrollPane(propertySheet);
-        propertyScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-        propertyScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        propertyScrollPane.setPreferredSize(new Dimension(280, 500)); // Size hint for BorderLayout
-        propertyScrollPane.setMinimumSize(new Dimension(200, 300));
-        propertyScrollPane.getViewport().setBackground(Color.WHITE);
-
-        // --- Layout Components ---
-        pane.add(drawingToolBar, BorderLayout.NORTH);
+        drawingScrollPane.getVerticalScrollBar().setUnitIncrement(20); // Faster scrolling
+        drawingScrollPane.getHorizontalScrollBar().setUnitIncrement(20);
         pane.add(drawingScrollPane, BorderLayout.CENTER);
-        pane.add(propertyScrollPane, BorderLayout.EAST); // Add the scroll pane containing the configured table
-        pane.add(drawingStatusPanel, BorderLayout.SOUTH);
 
-        // --- Link Services and Listeners ---
+        // 5. Property Sheet & Scroll Pane (East) - Build fully before adding
+        buildPropertyTableAndScrollPane(); // Helper does full setup
+        pane.add(propertyScrollPane, BorderLayout.EAST); // Add the configured scroll pane
+
+        // --- Link Controllers to Components (AFTER creation) ---
+        drawingView.setDrawingController(drawingController); // Link View -> Controller
+        drawingController.setDrawingView(drawingView);     // Link Controller -> View
+        drawingController.setPropertySheet(propertySheet); // Link Controller -> PropertySheet
+        actionListener.setToolBar(drawingToolBar);
+        actionListener.setDrawingController(drawingController); // Link controllers
+        actionListener.setComponent(drawingView); // For dialog parent
+        actionListener.setFrame(this);            // For dialog parent
+
+        // Link Drawing Service to View (for repaint trigger)
         drawingAppService.setDrawingView(drawingView);
-        actionListener.setComponent(drawingView);
-        actionListener.setFrame(this);
 
-        // Window Listeners
+        // --- Add Window Listeners ---
         this.addWindowListener(drawingWindowController);
         this.addWindowFocusListener(drawingWindowController);
         this.addWindowStateListener(drawingWindowController);
 
-        // Command Service Listener (ensure updates run on EDT)
+        // --- Command Service Listener ---
         CommandService.addListener((canUndo, canRedo) -> {
-            if (SwingUtilities.isEventDispatchThread()) {
+            Runnable updateTask = () -> {
                 if (drawingToolBar != null) drawingToolBar.updateUndoRedoState(canUndo, canRedo);
                 if (drawingMenuBar != null) drawingMenuBar.updateUndoRedoState(canUndo, canRedo);
+                // Populate table AFTER command finishes to reflect new state
                 if (propertySheet != null) propertySheet.populateTable(appService);
                 if (drawingView != null) drawingView.repaint();
+            };
+            if (SwingUtilities.isEventDispatchThread()) {
+                updateTask.run();
             } else {
-                SwingUtilities.invokeLater(() -> {
-                    if (drawingToolBar != null) drawingToolBar.updateUndoRedoState(canUndo, canRedo);
-                    if (drawingMenuBar != null) drawingMenuBar.updateUndoRedoState(canUndo, canRedo);
-                    if (propertySheet != null) propertySheet.populateTable(appService);
-                    if (drawingView != null) drawingView.repaint();
-                });
+                SwingUtilities.invokeLater(updateTask);
             }
         });
 
         // --- Final Frame Configuration ---
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1200, 800); // Set desired size
-        setMinimumSize(new Dimension(900, 600)); // Set minimum size
+        // Set size AFTER adding components if not using pack()
+        setSize(1200, 800);
+        setMinimumSize(new Dimension(900, 600));
         setLocationRelativeTo(null); // Center on screen
-        // Layout happens implicitly when setVisible(true) is called
 
-        // --- Set Initial Tool ---
-        if (drawingToolBar != null) {
-            drawingToolBar.setActiveTool(com.gabriel.drawfx.ActionCommand.SELECT);
-        }
-        appService.setToolMode(com.gabriel.drawfx.ToolMode.SELECT);
-        if (drawingController != null) {
-            drawingController.updateStatusBarTool("Select");
-        }
+        // --- Set Initial Tool (After everything is linked) ---
+        SwingUtilities.invokeLater(() -> { // Ensure initial setup happens on EDT
+            actionListener.actionPerformed(new ActionEvent(this, ActionEvent.ACTION_PERFORMED, com.gabriel.drawfx.ActionCommand.SELECT));
+            // Force an initial population of the property table
+            if (propertySheet != null) {
+                propertySheet.populateTable(appService);
+            }
+        });
+
+        System.out.println("DrawingFrame Constructor: Finished."); // Debug log
     }
 
-    // Helper to build and configure the property sheet
-    void buildPropertyTable() {
+    // Helper: Builds PropertySheet AND its JScrollPane
+    void buildPropertyTableAndScrollPane() {
+        System.out.println("DrawingFrame: Building Property Table and ScrollPane...");
         PropertyOptions options = new PropertyOptions.Builder().build();
-        // 1. Create the PropertySheet (constructor calls initializeProperties)
+
+        // 1. Create the PropertySheet instance (constructor builds structure)
         propertySheet = new PropertySheet(options);
 
-        // 2. Configure the table ITSELF *after* properties are initialized
-        propertySheet.setPreferredScrollableViewportSize(new Dimension(260, 400)); // Suggest viewport size to scroll pane
-        propertySheet.setFillsViewportHeight(true); // Allow table to use vertical space
-        propertySheet.setMinimumSize(new Dimension(200, 300)); // Minimum size for the table
-        propertySheet.setBackground(Color.WHITE); // Make sure it's visible
-        propertySheet.setOpaque(true);
-        propertySheet.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS); // Sensible default resize mode
+        // 2. Add the correct event listener instance
+        propertySheet.addEventListener(new PropertyEventListener(appService)); // Use the command-handling listener
 
-        // 3. Force the table to calculate its layout based on the model/columns
-        propertySheet.revalidate(); // *** ADDED: Explicit revalidation ***
+        // 3. Create the JScrollPane *containing* the propertySheet
+        propertyScrollPane = new JScrollPane(propertySheet);
+        propertyScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        propertyScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
-        // 4. Add listener and populate (redundant populate, initializeProperties did it, but safe)
-        propertySheet.addEventListener(new PropertyEventListener(appService));
-        propertySheet.populateTable(appService); // Ensure values are current
+        // 4. Set preferred and minimum size on the SCROLL PANE
+        propertyScrollPane.setPreferredSize(new Dimension(280, 500)); // Hint for BorderLayout
+        propertyScrollPane.setMinimumSize(new Dimension(220, 300));   // Minimum width for the panel
+
+        // Optional: Set viewport background
+        propertyScrollPane.getViewport().setBackground(Color.WHITE);
+
+        System.out.println("DrawingFrame: Property Table and ScrollPane built.");
     }
 
-    // Main method for testing this frame directly
+    // Main method for testing
     public static void main(String[] args) {
-        // Apply Look and Feel early
         try {
             for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -169,10 +175,9 @@ public class DrawingFrame extends JFrame {
             catch (Exception ex) { System.err.println("Failed to set LookAndFeel."); }
         }
 
-        // Run GUI on the Event Dispatch Thread
         SwingUtilities.invokeLater(() -> {
             DrawingFrame frame = new DrawingFrame();
-            frame.setVisible(true); // Make visible - this triggers the layout process
+            frame.setVisible(true);
         });
     }
 }
