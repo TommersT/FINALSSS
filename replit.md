@@ -19,6 +19,39 @@ This is a multi-module Maven project with the following modules:
 
 ## Recent Changes (October 29, 2025)
 
+### Enhanced Property Panel with Real-Time Updates and Image Controls (October 29, 2025)
+
+**New Features Added**:
+1. **Real-Time Property Updates**: Properties (X, Y, Width, Height) now update live as you move or scale shapes
+   - The property panel refreshes automatically during drag operations
+   - All position and dimension changes are immediately reflected in the property table
+   - Implemented in DrawingController.mouseDragged() for seamless real-time feedback
+
+2. **Fully Editable Position and Size Properties**:
+   - X Location, Y Location, Width, and Height can now be directly edited in the property panel
+   - Changes are applied immediately through the command pattern
+   - Full undo/redo support for all property edits
+   - PropertyEventListener handles all property changes with SetPositionCommand, SetWidthCommand, and SetHeightCommand
+
+3. **Object Type Display**:
+   - Shows the type of currently selected shape (Rectangle, Ellipse, Line, Text, Picture)
+   - Updates automatically when selection changes
+   - Displays "Drawing" when no shape is selected
+
+4. **Image Shape Controls**:
+   - **Change Image**: Click to change the image file for Picture shapes
+   - **Remove Image**: New action property to delete the selected Picture shape
+   - **Visible Checkbox**: Toggle visibility of image shapes
+   - All image controls only appear when a Picture shape is selected
+
+5. **Property Table Count**: Now displays 18 property rows (added "Remove Image")
+
+**Technical Implementation**:
+- Added "Remove Image" ActionProperty in PropertySheet.java
+- Enhanced isCellEditable() to show/hide Picture-specific properties
+- Wired Remove Image action to AppService.delete(selectedShape)
+- All changes integrate with existing command pattern for undo/redo support
+
 ### Property Table Fix - CRITICAL BUG RESOLVED (October 29, 2025)
 
 **Problem**: The property table on the right side of the application was completely empty - no rows were showing despite 17 properties being defined.
@@ -30,14 +63,15 @@ This is a multi-module Maven project with the following modules:
 2. These overrides were originally intended to prevent external additions after initialization, but they were also blocking the internal initialization process
 3. The fix allows the superclass `PropertyPanel.addProperty()` methods to execute properly, adding all 17 property rows to the table
 
-**Result**: Property table now displays all 17 rows correctly:
-- Object Type
-- Fore Color, Fill Color, Start Color, End Color
-- Use Gradient, Visible
-- X Location, Y Location, Width, Height
-- Line Thickness
-- Text, Image
-- Font Family, Font Style, Font Size
+**Result**: Property table now displays all 18 rows correctly:
+- Object Type (read-only, shows selected shape type)
+- Fore Color, Fill Color, Start Color, End Color (editable)
+- Use Gradient, Visible (editable checkboxes)
+- X Location, Y Location, Width, Height (editable with real-time updates)
+- Line Thickness (editable)
+- Text (editable for Text shapes)
+- Image, Remove Image (actions for Picture shapes)
+- Font Family, Font Style, Font Size (editable for Text shapes)
 
 ### Previous Update - Critical Infinite Recursion Bug Fixes (October 28, 2025)
 
@@ -108,7 +142,7 @@ The application will launch in the VNC viewer where you can interact with the dr
 - **Text Tool**: Create text with custom fonts, styles, and sizes via interactive dialog
 - **File Operations**: Save and load drawings in XML format
 - **Undo/Redo**: Full undo/redo support for all drawing operations
-- **Property Sheet**: **NOW WORKING** - View and edit shape properties with real-time bidirectional synchronization. All 17 property rows are visible and functional.
+- **Property Sheet**: **FULLY FUNCTIONAL** - View and edit shape properties with real-time bidirectional synchronization. All 18 property rows are visible and functional. Edit positions and sizes directly, with live updates during move/scale operations. Image shapes have dedicated Change and Remove Image actions.
 - **Status Bar**: Real-time display of current tool, mouse position, and selected shape information
 - **Modern UI**: Vector-based toolbar icons with hover effects and professional styling
 
