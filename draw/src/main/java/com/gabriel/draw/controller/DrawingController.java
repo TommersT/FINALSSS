@@ -1,4 +1,5 @@
-// tommerst/finalsss/FINALSSS-4b53253892a92ed882030feb653ef76e91b6ab5b/draw/src/main/java/com/gabriel/draw/controller/DrawingController.java
+// tommerst/finalsss/FINALSSS-9e12068487826fcd13f637263ddcbb04d01363b4/draw/src/main/java/com/gabriel/draw/controller/DrawingController.java
+// Updated with redo fix
 package com.gabriel.draw.controller;
 
 import com.gabriel.draw.component.PropertySheet;
@@ -403,34 +404,34 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
             if (isDraggingForMoveOrScale && dragStartPoint != null && !originalLocations.isEmpty()) {
 
                 // *** CRITICAL: Restore original state BEFORE creating the command ***
-                // This ensures the command captures the full start->end transformation
                 AppService baseService; // Get base service for direct state restoration
                 if (appService instanceof DrawingCommandAppService) {
                     baseService = ((DrawingCommandAppService) appService).getUnderlyingAppService();
                 } else {
                     baseService = appService;
                 }
-                for (Shape shape : appService.getSelectedShapes()) { // Iterate selected shapes CURRENTLY (might have changed?) - Safer to use originalLocations.keySet()
-                    Point originalLoc = originalLocations.get(shape);
-                    Dimension originalSize = originalSizes.get(shape);
-                    if (originalLoc != null) {
-                        // Use base service setters if they exist, otherwise direct set
-                        shape.setLocation(new Point(originalLoc)); // Restore location
-                        // baseService.setLocation(shape, new Point(originalLoc));
-                    }
-                    if (originalSize != null) {
-                        shape.setWidth(originalSize.width);   // Restore size
-                        shape.setHeight(originalSize.height);
-                        // baseService.setSize(shape, originalSize.width, originalSize.height);
-                    }
-                }
-
-
                 // Determine if it was a move or scale based on tool mode and handle interaction
                 boolean wasScale = (currentToolMode == ToolMode.SCALE) ||
                         (currentToolMode == ToolMode.SELECT && primarySelectedShape != null && primarySelectedShape.getSelectionMode() != SelectionMode.None);
                 boolean wasMove = (currentToolMode == ToolMode.MOVE) ||
                         (currentToolMode == ToolMode.SELECT && !wasScale);
+
+                // <<<<< START FIX >>>>>
+                // Restore state by iterating over the captured shapes
+                for (Shape shape : originalLocations.keySet()) {
+                    Point originalLoc = originalLocations.get(shape);
+                    Dimension originalSize = originalSizes.get(shape);
+                    if (originalLoc != null) {
+                        // Use base service setters if they exist, otherwise direct set
+                        shape.setLocation(new Point(originalLoc)); // Restore location
+                    }
+                    // Only restore size if it was a scale operation
+                    if (originalSize != null && wasScale) {
+                        shape.setWidth(originalSize.width);   // Restore size
+                        shape.setHeight(originalSize.height);
+                    }
+                }
+                // <<<<< END FIX >>>>>
 
                 // Check if the mouse actually moved significantly (optional threshold)
                 boolean mouseMoved = !end.equals(dragStartPoint);
