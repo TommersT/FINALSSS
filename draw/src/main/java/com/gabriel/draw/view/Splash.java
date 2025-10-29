@@ -1,146 +1,191 @@
 package com.gabriel.draw.view;
 
-import com.gabriel.draw.util.ImageLoader;
+import com.gabriel.draw.util.ImageLoader; // Keep ImageLoader if needed, otherwise remove
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 
-public class Splash extends JPanel implements MouseListener, MouseMotionListener {
+public class Splash extends JPanel implements MouseListener {
     private BufferedImage backgroundImage;
-    private BufferedImage buttonImage;
-    private ImageLoader imageLoader;
-    private Rectangle buttonBounds;
-    private boolean buttonHover = false;
-    
+    private BufferedImage tapTextImage; // Image for "Tap Anywhere to Draw!"
+    // private ImageLoader imageLoader; // Removed if not used elsewhere
+    private Timer animationTimer;
+    private float textAlpha = 1.0f; // Alpha for fade effect
+    private boolean fadingOut = true;
+
     public Splash() {
-        backgroundImage = createFallbackBackground();
-        buttonImage = createFallbackButton();
-        
-        setLayout(null);
-        setBackground(new Color(45, 55, 80));
-        setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
-        addMouseListener(this);
-        addMouseMotionListener(this);
+        // Load images using resource streams
+        backgroundImage = loadImageResource("/com/gabriel/draw/view/1.png"); // Use correct path
+        tapTextImage = loadImageResource("/com/gabriel/draw/view/2.png"); // Use correct path
+
+        // Fallback if images fail to load
+        if (backgroundImage == null) {
+            backgroundImage = createFallbackBackground();
+            System.err.println("Warning: Failed to load 1.png, using fallback background.");
+        }
+        if (tapTextImage == null) {
+            tapTextImage = createFallbackTapText();
+            System.err.println("Warning: Failed to load 2.png, using fallback tap text.");
+        }
+
+
+        setLayout(null); // Keep layout null for manual positioning
+        setCursor(new Cursor(Cursor.HAND_CURSOR)); // Indicate clickable
+        addMouseListener(this); // Listen for clicks anywhere
+
+        // Timer for fade animation (adjust delay for speed)
+        animationTimer = new Timer(50, e -> updateAnimation());
+        animationTimer.start();
     }
-    
+
+    private BufferedImage loadImageResource(String path) {
+        try (InputStream is = getClass().getResourceAsStream(path)) {
+            if (is == null) {
+                System.err.println("Resource not found: " + path);
+                return null;
+            }
+            return ImageIO.read(is);
+        } catch (IOException e) {
+            System.err.println("Error loading image resource " + path + ": " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // --- Fallback generation methods (kept in case image loading fails) ---
     private BufferedImage createFallbackBackground() {
-        BufferedImage img = new BufferedImage(1920, 1080, BufferedImage.TYPE_INT_RGB);
+        BufferedImage img = new BufferedImage(800, 600, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = img.createGraphics();
-        GradientPaint gradient = new GradientPaint(0, 0, new Color(45, 55, 80), 
-                                                    0, 1080, new Color(80, 60, 120));
+        GradientPaint gradient = new GradientPaint(0, 0, new Color(45, 55, 80), 0, 600, new Color(80, 60, 120));
         g.setPaint(gradient);
-        g.fillRect(0, 0, 1920, 1080);
+        g.fillRect(0, 0, 800, 600);
         g.setColor(Color.WHITE);
-        g.setFont(new Font("Arial", Font.BOLD, 72));
-        g.drawString("GoDraw", 800, 200);
+        g.setFont(new Font("Arial", Font.BOLD, 48));
+        g.drawString("GoDraw", 300, 150);
         g.dispose();
         return img;
     }
-    
-    private BufferedImage createFallbackButton() {
-        BufferedImage img = new BufferedImage(400, 300, BufferedImage.TYPE_INT_ARGB);
+
+    private BufferedImage createFallbackTapText() {
+        BufferedImage img = new BufferedImage(300, 50, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = img.createGraphics();
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g.setColor(new Color(60, 140, 220));
-        g.fillRoundRect(50, 100, 300, 100, 20, 20);
-        g.setColor(Color.WHITE);
-        g.setFont(new Font("Arial", Font.BOLD, 32));
-        g.drawString("START DRAWING", 80, 165);
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setColor(new Color(255, 255, 150)); // Light yellow
+        g.setFont(new Font("Arial", Font.BOLD, 24));
+        g.drawString("Tap Anywhere to Draw!", 10, 35);
         g.dispose();
         return img;
     }
-    
+    // --- End Fallbacks ---
+
+    private void updateAnimation() {
+        if (fadingOut) {
+            textAlpha -= 0.05f;
+            if (textAlpha <= 0.1f) { // Fade limit
+                textAlpha = 0.1f;
+                fadingOut = false;
+            }
+        } else {
+            textAlpha += 0.05f;
+            if (textAlpha >= 1.0f) {
+                textAlpha = 1.0f;
+                fadingOut = true;
+            }
+        }
+        repaint(); // Trigger repaint to show alpha change
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR); // Better image scaling
+
         int width = getWidth();
         int height = getHeight();
-        
+
+        // Draw background image, scaling proportionally to fit
         if (backgroundImage != null) {
-            g2d.drawImage(backgroundImage, 0, 0, width, height, this);
-        }
-        
-        if (buttonImage != null) {
-            int buttonWidth = Math.min(400, width / 3);
-            int buttonHeight = (int) (buttonWidth * buttonImage.getHeight() / (double) buttonImage.getWidth());
-            
-            int buttonX = width - buttonWidth - (width / 8);
-            int buttonY = (height - buttonHeight) / 2;
-            
-            buttonBounds = new Rectangle(buttonX, buttonY, buttonWidth, buttonHeight);
-            
-            if (buttonHover) {
-                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.9f));
-                g2d.setColor(new Color(255, 255, 255, 100));
-                g2d.fillRoundRect(buttonX - 10, buttonY - 10, buttonWidth + 20, buttonHeight + 20, 15, 15);
+            // Calculate scaled dimensions while maintaining aspect ratio
+            double imgAspect = (double) backgroundImage.getWidth() / backgroundImage.getHeight();
+            double panelAspect = (double) width / height;
+            int drawWidth, drawHeight, drawX, drawY;
+
+            if (imgAspect > panelAspect) { // Image is wider than panel
+                drawWidth = width;
+                drawHeight = (int) (width / imgAspect);
+                drawX = 0;
+                drawY = (height - drawHeight) / 2; // Center vertically
+            } else { // Image is taller than panel (or same aspect)
+                drawHeight = height;
+                drawWidth = (int) (height * imgAspect);
+                drawY = 0;
+                drawX = (width - drawWidth) / 2; // Center horizontally
             }
-            
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
-            g2d.drawImage(buttonImage, buttonX, buttonY, buttonWidth, buttonHeight, this);
+            g2d.drawImage(backgroundImage, drawX, drawY, drawWidth, drawHeight, this);
+        }
+
+        // Draw animated "Tap Anywhere to Draw!" text image
+        if (tapTextImage != null) {
+            // Adjust size and position as needed
+            int textImgWidth = tapTextImage.getWidth() / 2; // Make it smaller
+            int textImgHeight = tapTextImage.getHeight() / 2;
+            int textX = width - textImgWidth - (width / 10); // Position on the right-middle
+            int textY = (height - textImgHeight) / 2;
+
+            // Apply fading effect
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, textAlpha));
+            g2d.drawImage(tapTextImage, textX, textY, textImgWidth, textImgHeight, this);
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f)); // Reset alpha
         }
     }
-    
+
     @Override
     public void mouseClicked(MouseEvent e) {
+        // Trigger main application launch on ANY click
+        launchMainApplication();
     }
-    
-    @Override
-    public void mousePressed(MouseEvent e) {
-    }
-    
-    @Override
-    public void mouseReleased(MouseEvent e) {
-        if (buttonBounds != null && buttonBounds.contains(e.getPoint())) {
-            launchMainApplication();
-        }
-    }
-    
-    @Override
-    public void mouseEntered(MouseEvent e) {
-    }
-    
-    @Override
-    public void mouseExited(MouseEvent e) {
-        buttonHover = false;
-        repaint();
-    }
-    
-    @Override
-    public void mouseDragged(MouseEvent e) {
-    }
-    
-    @Override
-    public void mouseMoved(MouseEvent e) {
-        boolean wasHover = buttonHover;
-        buttonHover = (buttonBounds != null && buttonBounds.contains(e.getPoint()));
-        
-        if (buttonHover) {
-            setCursor(new Cursor(Cursor.HAND_CURSOR));
-        } else {
-            setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
-        }
-        
-        if (wasHover != buttonHover) {
-            repaint();
-        }
-    }
-    
+
+    // --- Unused MouseListener / MouseMotionListener methods ---
+    @Override public void mousePressed(MouseEvent e) {}
+    @Override public void mouseReleased(MouseEvent e) {} // Click handled in mouseClicked
+    @Override public void mouseEntered(MouseEvent e) {}
+    @Override public void mouseExited(MouseEvent e) {}
+    // @Override public void mouseDragged(MouseEvent e) {} // Removed MouseMotionListener
+    // @Override public void mouseMoved(MouseEvent e) {} // Removed MouseMotionListener
+
     private void launchMainApplication() {
+        if (animationTimer != null && animationTimer.isRunning()) {
+            animationTimer.stop(); // Stop animation
+        }
+
         JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-        
-        DrawingFrame mf = new DrawingFrame();
-        mf.setExtendedState(mf.getExtendedState() | JFrame.MAXIMIZED_BOTH);
-        mf.setVisible(true);
-        
-        topFrame.dispose();
+        if (topFrame == null) return; // Should not happen
+
+        // Ensure UI updates happen on the Event Dispatch Thread
+        SwingUtilities.invokeLater(() -> {
+            DrawingFrame mf = new DrawingFrame();
+            // Optional: Make main frame maximized or set preferred size
+            mf.setExtendedState(mf.getExtendedState() | JFrame.MAXIMIZED_BOTH);
+            mf.setVisible(true);
+
+            topFrame.dispose(); // Close splash screen
+        });
+    }
+
+    // Optional: Clean up timer when the panel is removed
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        if (animationTimer != null && animationTimer.isRunning()) {
+            animationTimer.stop();
+        }
     }
 }
