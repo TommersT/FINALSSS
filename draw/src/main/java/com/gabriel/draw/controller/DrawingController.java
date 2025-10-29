@@ -1,5 +1,5 @@
 // tommerst/finalsss/FINALSSS-9e12068487826fcd13f637263ddcbb04d01363b4/draw/src/main/java/com/gabriel/draw/controller/DrawingController.java
-// Updated with redo fix
+// Updated with Line Normalizer Skip & Text Bounds Pre-calculation
 package com.gabriel.draw.controller;
 
 import com.gabriel.draw.component.PropertySheet;
@@ -24,6 +24,8 @@ import javax.swing.*;
 import java.util.List;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.Line2D; // Import for Line2D
+import java.awt.image.BufferedImage; // Import for BufferedImage
 import java.util.Map;
 import java.util.HashMap;
 
@@ -129,9 +131,18 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
                         appService.setText(newText); // Assumes this triggers necessary commands via listener or wrapper
                     }
                     if (fontChanged) {
-                        appService.setFontFamily(newFont.getFamily());
-                        appService.setFontStyle(newFont.getStyle());
-                        appService.setFontSize(newFont.getSize());
+                        // Check which specific part of the font changed to create specific commands
+                        // This avoids creating unnecessary commands if only size changed, for example
+                        Font currentAppFont = appService.getFont(); // Get context
+                        if (!newFont.getFamily().equals(oldFont.getFamily())) {
+                            appService.setFontFamily(newFont.getFamily());
+                        }
+                        if (newFont.getStyle() != oldFont.getStyle()) {
+                            appService.setFontStyle(newFont.getStyle());
+                        }
+                        if (newFont.getSize() != oldFont.getSize()) {
+                            appService.setFontSize(newFont.getSize());
+                        }
                     }
 
                     if (textChanged || fontChanged) {
@@ -215,6 +226,30 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
                                 currentShape = new Text(start);
                                 currentShape.setText(textContent);
                                 currentShape.setFont(dialog.getSelectedFont());
+
+                                // --- START MODIFICATION ---
+                                // Pre-calculate bounds immediately after creation
+                                Graphics g = drawingView.getGraphics(); // Or use bufferGraphics if accessible
+                                if (g != null) {
+                                    try {
+                                        FontMetrics fm = g.getFontMetrics(currentShape.getFont());
+                                        int textWidth = fm.stringWidth(currentShape.getText());
+                                        // Use ascent+descent for better height estimate, plus padding
+                                        int textHeight = fm.getAscent() + fm.getDescent();
+                                        currentShape.setWidth(textWidth + 10); // Add padding
+                                        currentShape.setHeight(textHeight + 5); // Add padding
+                                    } finally {
+                                        g.dispose(); // Dispose graphics context if obtained directly
+                                    }
+                                } else {
+                                    // Fallback if graphics not available - renderer will set later
+                                    System.err.println("Warning: Could not get Graphics to pre-calculate text bounds.");
+                                    // Set some initial small size to allow selection
+                                    currentShape.setWidth(10);
+                                    currentShape.setHeight(10);
+                                }
+                                // --- END MODIFICATION ---
+
                             } else { // No text entered
                                 appService.setDrawMode(DrawMode.Idle); // Abort draw operation
                                 return;
@@ -235,6 +270,7 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
                                 return;
                             }
                         }
+                        // Use correct Picture constructor
                         currentShape = new Picture(start, start, imageFilename);
                         break;
                     default: // Handle Select case specifically or others
@@ -255,6 +291,9 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
                     currentShape.setThickness(appService.getThickness());
                     currentShape.setFill(appService.getFill());
                     // Font/Text are handled specifically for Text shapes
+                    if (!(currentShape instanceof Text)) { // Apply global font if not text
+                        currentShape.setFont(appService.getFont());
+                    }
                 } else {
                     // If shape creation failed (e.g., text cancelled), reset state
                     appService.setDrawMode(DrawMode.Idle);
@@ -285,32 +324,48 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
                 Point locOld = currentShape.getLocation();
                 int wOld = currentShape.getWidth();
                 int hOld = currentShape.getHeight();
+
+                // --- START MODIFICATION: Adjust repaint bounds for Text ---
+                int yOffsetOld = 0;
+                if (currentShape instanceof Text && currentShape.getFont() != null) {
+                    // Get ascent to adjust bounds check to match visual location
+                    FontMetrics fm = getFontMetrics(currentShape.getFont()); // Use helper
+                    if (fm != null) {
+                        yOffsetOld = -fm.getAscent();
+                    }
+                }
+                // --- END MODIFICATION ---
+
                 // Use start point and current location/size for bounds
                 repaintBounds = new java.awt.Rectangle(
                         Math.min(start.x, locOld.x) - margin,
-                        Math.min(start.y, locOld.y) - margin,
+                        Math.min(start.y, locOld.y + yOffsetOld) - margin, // Apply offset
                         Math.abs(wOld) + 2 * margin, // Use absolute value for size
                         Math.abs(hOld) + 2 * margin);
 
 
                 // Update the preview shape's size based on the drag
-                // Use a direct method for preview, NOT the command-wrapped one
-                // Assuming `appService` holds the wrapped service, get the underlying one
-                AppService baseService;
-                if (appService instanceof DrawingCommandAppService) {
-                    baseService = ((DrawingCommandAppService) appService).getUnderlyingAppService();
-                } else {
-                    baseService = appService; // Fallback, but might cause issues if it's the wrapper
-                }
+                AppService baseService = getUnderlyingService(); // Use helper
                 baseService.scale(currentShape, end); // Use base service's scale for preview
 
                 // Calculate new bounds after updating
                 Point locNew = currentShape.getLocation();
                 int wNew = currentShape.getWidth();
                 int hNew = currentShape.getHeight();
+
+                // --- START MODIFICATION: Adjust repaint bounds for Text ---
+                int yOffsetNew = 0;
+                if (currentShape instanceof Text && currentShape.getFont() != null) {
+                    FontMetrics fm = getFontMetrics(currentShape.getFont());
+                    if (fm != null) {
+                        yOffsetNew = -fm.getAscent();
+                    }
+                }
+                // --- END MODIFICATION ---
+
                 java.awt.Rectangle newBounds = new java.awt.Rectangle(
                         Math.min(start.x, locNew.x) - margin,
-                        Math.min(start.y, locNew.y) - margin,
+                        Math.min(start.y, locNew.y + yOffsetNew) - margin, // Apply offset
                         Math.abs(wNew) + 2 * margin,
                         Math.abs(hNew) + 2 * margin);
                 repaintBounds.add(newBounds); // Combine old and new repaint areas
@@ -329,20 +384,24 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
 
                 List<Shape> shapesToUpdate = appService.getSelectedShapes(); // Get all selected shapes
 
-                // Get base service for direct manipulation during preview
-                AppService baseService;
-                if (appService instanceof DrawingCommandAppService) {
-                    baseService = ((DrawingCommandAppService) appService).getUnderlyingAppService();
-                } else {
-                    baseService = appService;
-                }
+                AppService baseService = getUnderlyingService(); // Use helper
 
 
                 for (Shape shape : shapesToUpdate) {
                     Point loc = shape.getLocation();
+                    // --- START MODIFICATION: Adjust repaint bounds for Text ---
+                    int yOffset = 0;
+                    if (shape instanceof Text && shape.getFont() != null) {
+                        FontMetrics fm = getFontMetrics(shape.getFont());
+                        if (fm != null) {
+                            yOffset = -fm.getAscent();
+                        }
+                    }
+                    // --- END MODIFICATION ---
+
                     // Calculate old bounds for this shape
                     java.awt.Rectangle oldShapeBounds = new java.awt.Rectangle(
-                            loc.x - margin, loc.y - margin,
+                            loc.x - margin, loc.y + yOffset - margin, // Apply offset
                             shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin);
                     if (repaintBounds == null) repaintBounds = oldShapeBounds;
                     else repaintBounds.add(oldShapeBounds);
@@ -367,8 +426,9 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
 
                     // Calculate new bounds for this shape after transformation
                     Point newLoc = shape.getLocation();
+                    // yOffset remains the same as font doesn't change during drag
                     java.awt.Rectangle newShapeBounds = new java.awt.Rectangle(
-                            newLoc.x - margin, newLoc.y - margin,
+                            newLoc.x - margin, newLoc.y + yOffset - margin, // Apply offset
                             shape.getWidth() + 2 * margin, shape.getHeight() + 2 * margin);
                     repaintBounds.add(newShapeBounds);
                 }
@@ -403,81 +463,70 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
             // --- Finalize Move or Scale ---
             if (isDraggingForMoveOrScale && dragStartPoint != null && !originalLocations.isEmpty()) {
 
-                // *** CRITICAL: Restore original state BEFORE creating the command ***
-                AppService baseService; // Get base service for direct state restoration
-                if (appService instanceof DrawingCommandAppService) {
-                    baseService = ((DrawingCommandAppService) appService).getUnderlyingAppService();
-                } else {
-                    baseService = appService;
-                }
+                AppService baseService = getUnderlyingService(); // Use helper
+
                 // Determine if it was a move or scale based on tool mode and handle interaction
                 boolean wasScale = (currentToolMode == ToolMode.SCALE) ||
                         (currentToolMode == ToolMode.SELECT && primarySelectedShape != null && primarySelectedShape.getSelectionMode() != SelectionMode.None);
                 boolean wasMove = (currentToolMode == ToolMode.MOVE) ||
                         (currentToolMode == ToolMode.SELECT && !wasScale);
 
-                // <<<<< START FIX >>>>>
-                // Restore state by iterating over the captured shapes
-                for (Shape shape : originalLocations.keySet()) {
+                // <<<<< START RESTORE STATE >>>>>
+                for (Shape shape : originalLocations.keySet()) { // Iterate using keyset is safer
                     Point originalLoc = originalLocations.get(shape);
-                    Dimension originalSize = originalSizes.get(shape);
+                    Dimension originalSize = originalSizes.get(shape); // May be null if only moved
                     if (originalLoc != null) {
-                        // Use base service setters if they exist, otherwise direct set
                         shape.setLocation(new Point(originalLoc)); // Restore location
                     }
-                    // Only restore size if it was a scale operation
-                    if (originalSize != null && wasScale) {
+                    // Only restore size if it was a scale operation and size was stored
+                    if (wasScale && originalSize != null) {
                         shape.setWidth(originalSize.width);   // Restore size
                         shape.setHeight(originalSize.height);
                     }
                 }
-                // <<<<< END FIX >>>>>
+                // <<<<< END RESTORE STATE >>>>>
 
                 // Check if the mouse actually moved significantly (optional threshold)
                 boolean mouseMoved = !end.equals(dragStartPoint);
 
                 if (mouseMoved) { // Only create command if there was a change
                     if (wasMove) {
-                        // Use the command-wrapped service: appService.move(start, end)
-                        // Pass the ABSOLUTE start and end points of the drag
                         appService.move(dragStartPoint, end);
                     } else if (wasScale && primarySelectedShape != null) {
                         Point scaleEnd = end;
                         if (e.isShiftDown()) { // Check shift state at release
                             Dimension originalSize = originalSizes.get(primarySelectedShape);
                             if (originalSize != null) {
-                                // Use dragStartPoint as anchor for final aspect ratio calc
                                 scaleEnd = maintainAspectRatio(primarySelectedShape, dragStartPoint, end);
                             }
                         }
-                        // Use the command-wrapped service: appService.scale(shape, start, end)
                         appService.scale(primarySelectedShape, dragStartPoint, scaleEnd);
                     }
                 }
             }
             // --- Finalize Shape Creation ---
             else if (currentToolMode == ToolMode.DRAW && currentShape != null) {
-                // Apply final size/position based on release point
-                // Use a base service call temporarily to set final state before command
-                AppService baseService;
-                if (appService instanceof DrawingCommandAppService) {
-                    baseService = ((DrawingCommandAppService) appService).getUnderlyingAppService();
-                } else {
-                    baseService = appService;
-                }
+                AppService baseService = getUnderlyingService(); // Use helper
                 baseService.scale(currentShape, end); // Set final size based on end point
-                Normalizer.normalize(currentShape); // Ensure width/height positive
 
-                // Create command only if the shape has a valid size
-                if (currentShape.getWidth() > 1 || currentShape.getHeight() > 1) { // Threshold > 0
-                    // Use command-wrapped service to make creation undoable
+                // --- START MODIFICATION ---
+                // Only normalize shapes that are NOT lines
+                boolean isLine = currentShape instanceof com.gabriel.draw.model.Line;
+                if (!isLine) {
+                    Normalizer.normalize(currentShape); // Ensure width/height positive for non-lines
+                }
+                // --- END MODIFICATION ---
+
+                boolean hasSize = currentShape.getWidth() != 0 || currentShape.getHeight() != 0;
+
+                // Create command if it's a line OR if it has non-zero size
+                if (isLine || hasSize) {
                     appService.create(currentShape);
                 }
                 currentShape = null; // Clear the preview shape
             }
 
             // --- Reset State ---
-            // FIX: Use wrapped service to set mode potentially creating command
             appService.setDrawMode(DrawMode.Idle);
             isDraggingForMoveOrScale = false;
             dragStartPoint = null;
@@ -487,31 +536,22 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
 
 
             // --- Final UI Updates ---
-            // Update property sheet AFTER command potentially modified state
             if (propertySheet != null) {
-                propertySheet.populateTable(appService);
+                // Use invokeLater to ensure it runs after any command execution finishes
+                SwingUtilities.invokeLater(() -> propertySheet.populateTable(appService));
             }
-            // Final repaint covering the whole view potentially, or just affected area
             if (drawingView != null) {
-                drawingView.repaint();
+                drawingView.repaint(); // Full repaint after action completes
             }
+            updateStatusBarShape(); // Update status bar after selection might change
         }
     }
 
 
     // --- Helper for applying scale PREVIEW logic ---
     // This duplicates logic from ScalerService but applies it directly for the drag preview
-    private void applyScalePreview(Shape shape, Point previewStart, Point previewEnd) {
-        int dx = previewEnd.x - previewStart.x; // Delta for this segment
-        int dy = previewEnd.y - previewStart.y; // Delta for this segment
-
-        // We need the state *before* this drag segment to apply the delta correctly.
-        // However, the simpler approach is to calculate based on the absolute drag start and end.
-        Point currentLoc = shape.getLocation();
-        Dimension currentSize = new Dimension(shape.getWidth(), shape.getHeight());
-
-
-        // Get the state from the beginning of the whole drag operation
+    private void applyScalePreview(Shape shape, Point previewStartUnused, Point previewEnd) {
+        // We need the state from the beginning of the whole drag operation
         Dimension originalSize = originalSizes.get(shape);
         Point originalLoc = originalLocations.get(shape);
         if (originalSize == null || originalLoc == null || dragStartPoint == null) return; // Should not happen
@@ -520,13 +560,13 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
         int totalDx = previewEnd.x - dragStartPoint.x;
         int totalDy = previewEnd.y - dragStartPoint.y;
 
-
         SelectionMode selMode = shape.getSelectionMode(); // Use the mode determined on press
 
         // Apply scaling based on handle and TOTAL delta from dragStartPoint, starting from original state
         Point newLoc = new Point(originalLoc);
         Dimension newSize = new Dimension(originalSize);
 
+        // --- Scaling Logic (same as before, applies totalDx/totalDy to original state) ---
         if(selMode == SelectionMode.UpperLeft) {
             newLoc.x = originalLoc.x + totalDx;
             newLoc.y = originalLoc.y + totalDy;
@@ -534,21 +574,18 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
             newSize.height = originalSize.height - totalDy;
         } else if(selMode == SelectionMode.LowerLeft) {
             newLoc.x = originalLoc.x + totalDx;
-            // newLoc.y = originalLoc.y; // Y does not change from original
             newSize.width = originalSize.width - totalDx;
             newSize.height = originalSize.height + totalDy;
         } else if(selMode == SelectionMode.UpperRight){
-            // newLoc.x = originalLoc.x; // X does not change
             newLoc.y = originalLoc.y + totalDy;
             newSize.width = originalSize.width + totalDx;
             newSize.height = originalSize.height - totalDy;
         } else if(selMode == SelectionMode.LowerRight){
-            // newLoc = originalLoc; // Location does not change
             newSize.width = originalSize.width + totalDx;
             newSize.height = originalSize.height + totalDy;
         } else if(selMode == SelectionMode.MiddleRight){
             newSize.width = originalSize.width + totalDx;
-            // Location and height don't change
+            // Location and height don't change from original for preview purpose
             newLoc = originalLoc;
             newSize.height = originalSize.height;
         } else if(selMode == SelectionMode.MiddleLeft){
@@ -569,13 +606,14 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
             newLoc = originalLoc;
             newSize.width = originalSize.width;
         }
+        // --- End Scaling Logic ---
 
         // Set the calculated preview state directly on the shape
         shape.setLocation(newLoc);
         shape.setWidth(newSize.width);
         shape.setHeight(newSize.height);
 
-        // Important: Do NOT normalize during preview drag, normalize only on mouse release
+        // Important: Do NOT normalize during preview drag, normalize only on mouse release (if needed)
     }
 
 
@@ -585,7 +623,11 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
     @Override
     public void mouseExited(MouseEvent e) {
         // If mouse leaves the drawing area during a drag, consider cancelling or completing?
-        // For now, do nothing, release event will handle completion.
+        // For now, reset status bar coordinates
+        if (drawingStatusPanel != null) {
+            // Indicate off-canvas? Or just stop updating? Let's clear.
+            // drawingStatusPanel.setPoint(new Point(-1, -1)); // Or specific text
+        }
     }
 
 
@@ -594,11 +636,45 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
         if (drawingStatusPanel != null) {
             drawingStatusPanel.setPoint(e.getPoint());
         }
-        // Potentially update cursor based on handle hover when in Select/Scale mode
-        // (Requires checking shape handles against mouse position - complex)
+        // TODO: Update cursor based on handle hover when in Select/Scale mode
+        // (Requires checking shape handles against mouse position - more complex)
     }
 
     // --- Helper Methods ---
+
+    // Helper to get underlying service
+    private AppService getUnderlyingService() {
+        if (appService instanceof DrawingCommandAppService) {
+            return ((DrawingCommandAppService) appService).getUnderlyingAppService();
+        }
+        return appService; // Fallback
+    }
+
+    // Helper to get FontMetrics safely
+    private FontMetrics getFontMetrics(Font font) {
+        // Try getting from the view first
+        if (drawingView != null) {
+            Graphics g = drawingView.getGraphics();
+            if (g != null) {
+                try {
+                    return g.getFontMetrics(font);
+                } finally {
+                    g.dispose();
+                }
+            }
+        }
+        // Fallback: create temporary graphics
+        Graphics tempG = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB).getGraphics();
+        if (tempG != null) {
+            try {
+                return tempG.getFontMetrics(font);
+            } finally {
+                tempG.dispose();
+            }
+        }
+        return null; // Should not happen
+    }
+
 
     private void updateStatusBarShape() {
         if (drawingStatusPanel != null) {
@@ -610,7 +686,7 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
             } else if (count > 1) {
                 drawingStatusPanel.setShapeInfo(count + " shapes selected");
             } else {
-                drawingStatusPanel.setShapeName(null);
+                drawingStatusPanel.setShapeName(null); // Clears to "No shape selected"
             }
         }
     }
@@ -641,44 +717,51 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
             case LowerLeft:  fixedPoint.setLocation(originalLoc.x + originalSize.width, originalLoc.y); break;
             case UpperRight: fixedPoint.setLocation(originalLoc.x, originalLoc.y + originalSize.height); break;
             case LowerRight: fixedPoint.setLocation(originalLoc.x, originalLoc.y); break;
-            // FIX: Correctly qualify enum constants
+
+            // --- Corrected Logic for Edge Handles ---
             case MiddleLeft:
+                // X changes, Y is fixed relative to originalLoc. Calculate new height based on aspect ratio and width change.
+                // This handle only controls width directly. Height adjusts proportionally.
+                // The fixed point for height calculation is the vertical center based on original state.
+                // We don't need fixedPoint here. Adjust dragPoint's Y based on X change from anchor.
+                int deltaX_ML = dragPoint.x - anchorPoint.x;
+                int newY_ML = anchorPoint.y + (int)Math.round(deltaX_ML / aspectRatio * (dragPoint.y < anchorPoint.y ? -1 : 1)); // Adjust Y proportionally
+                // Return the adjusted point, keeping original X drag but modifying Y
+                // This logic seems overly complex for edge handles + shift.
+                // Simplification: Edge handles usually just change one dimension. Shift + Edge might lock axis?
+                // Let's revert to locking the axis perpendicular to the handle's primary direction.
+                return new Point(dragPoint.x, anchorPoint.y); // Lock Y
+
             case MiddleRight:
-                // Primarily horizontal scaling, adjust Y based on X change to maintain ratio
-                int currentWidth = dragPoint.x - fixedPoint.x;
-                int newHeight = (int) Math.round(Math.abs(currentWidth) / aspectRatio);
-                // Corrected logic: For edge drags with shift, keep the axis perpendicular to the drag fixed.
-                // Since we are dragging Left/Right, the Y-coordinate from the *anchorPoint* (where drag started this segment) is kept.
-                return new Point(dragPoint.x, anchorPoint.y); // Lock Y for edge drag
+                // Similar logic, lock Y
+                return new Point(dragPoint.x, anchorPoint.y); // Lock Y
 
-
-            // FIX: Correctly qualify enum constants
             case MiddleTop:
+                // Y changes, X is fixed. Lock X.
+                return new Point(anchorPoint.x, dragPoint.y); // Lock X
+
             case MiddleBottom:
-                // Primarily vertical scaling, adjust X based on Y change
-                int currentHeight = dragPoint.y - fixedPoint.y;
-                int newWidth = (int) Math.round(Math.abs(currentHeight) * aspectRatio);
-                // Since we are dragging Up/Down, the X-coordinate from the *anchorPoint* is kept.
-                return new Point(anchorPoint.x, dragPoint.y); // Lock X for edge drag
+                // Similar logic, lock X
+                return new Point(anchorPoint.x, dragPoint.y); // Lock X
+            // --- End Corrected Logic ---
 
             default: return dragPoint; // Not a scaling handle
         }
 
-        // Calculate deltas from the fixed point to the current drag point
+        // Calculate deltas from the fixed point to the current drag point (for CORNER handles)
         int dx = dragPoint.x - fixedPoint.x;
         int dy = dragPoint.y - fixedPoint.y;
 
         // Adjust the smaller delta based on the aspect ratio and the larger delta
-        // Determine leading axis based on magnitude relative to aspect ratio
         if (Math.abs(dx) / aspectRatio > Math.abs(dy)) {
             // Width change is dominant
-            dy = (int)Math.round(dx / aspectRatio * (dy < 0 ? -1 : 1)); // Adjust dy based on dx and original aspect ratio
+            dy = (int)Math.round(dx / aspectRatio * (dy < 0 ? -1 : 1));
         } else {
             // Height change is dominant
-            dx = (int)Math.round(dy * aspectRatio * (dx < 0 ? -1 : 1)); // Adjust dx based on dy
+            dx = (int)Math.round(dy * aspectRatio * (dx < 0 ? -1 : 1));
         }
 
-        // Return the adjusted point
+        // Return the adjusted point for corner handles
         return new Point(fixedPoint.x + dx, fixedPoint.y + dy);
     }
 
@@ -706,15 +789,11 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
             }
         }
         // --- Add other key bindings here ---
-        // Example: Ctrl+Z for Undo, Ctrl+Y for Redo (though menus/toolbars also handle this)
         else if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_Z) {
             appService.undo();
-            // Commands should trigger repaint and property sheet updates
         } else if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_Y) {
             appService.redo();
-            // Commands should trigger repaint and property sheet updates
         }
-        // Example: Nudge selected shapes with arrow keys
         else if (e.getKeyCode() >= KeyEvent.VK_LEFT && e.getKeyCode() <= KeyEvent.VK_DOWN) {
             List<Shape> selected = appService.getSelectedShapes();
             if (!selected.isEmpty()) {
@@ -730,25 +809,25 @@ public class DrawingController implements MouseListener, MouseMotionListener, Ke
                     Point startNudge = new Point(0, 0); // Origin for delta calculation
                     Point endNudge = new Point(dx, dy);
 
-                    // Store original state before creating command (essential!)
-                    dragStartPoint = new Point(startNudge); // Use dummy start for nudge command
+                    // --- Nudge needs Undo Support ---
+                    // Store original state before creating command
+                    dragStartPoint = new Point(startNudge); // Use dummy start
                     originalLocations.clear();
                     originalSizes.clear(); // Not needed for move
                     for (Shape shape : selected) {
                         originalLocations.put(shape, new Point(shape.getLocation()));
                     }
 
-                    // Create a move command for the nudge action using the wrapped service
+                    // Create a move command for the nudge action
                     appService.move(startNudge, endNudge);
 
-                    // Clear temporary state (though maybe not strictly needed for nudge)
+                    // Clear temporary state
                     dragStartPoint = null;
                     originalLocations.clear();
+                    // --- End Nudge Undo Support ---
 
-
-                    // Update UI after nudge command execution (Command should handle repaint)
-                    if (propertySheet != null) propertySheet.populateTable(appService);
-                    // if (drawingView != null) drawingView.repaint(); // Command should do this
+                    // Command execution should handle repaint and property updates via listener
+                    // if (propertySheet != null) propertySheet.populateTable(appService);
                 }
             }
         }
