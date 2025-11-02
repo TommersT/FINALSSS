@@ -2,9 +2,6 @@ package com.gabriel.property.validator.longNumber;
 
 import com.gabriel.property.validator.Validator;
 
-/**
- * Default implementation to validate long objects
- */
 public class LongValidator implements Validator {
 
     @Override

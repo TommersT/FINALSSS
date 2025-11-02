@@ -12,7 +12,7 @@ public class SetFontSizeCommand implements Command {
     private AppService appService;
     private int oldValue;
     private int newValue;
-    private Font oldFontContext; // Store complete old font for context
+    private Font oldFontContext;
     private boolean appliedToSelection;
     private List<Shape> targetShapes;
 
@@ -20,7 +20,7 @@ public class SetFontSizeCommand implements Command {
         this.appService = appService;
         this.oldValue = oldValue;
         this.newValue = newValue;
-        this.oldFontContext = oldFontContext; // Capture context
+        this.oldFontContext = oldFontContext;
         this.targetShapes = new ArrayList<>(appService.getSelectedShapes());
         this.appliedToSelection = !this.targetShapes.isEmpty();
     }
@@ -50,9 +50,9 @@ public class SetFontSizeCommand implements Command {
                 }
             }
         } else {
-            baseService.getDrawing().setFont(oldFontContext); // Restore full context
+            baseService.getDrawing().setFont(oldFontContext);
         }
-        triggerRepaint(); // ESSENTIAL
+        triggerRepaint();
     }
 
     @Override

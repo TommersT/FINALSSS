@@ -1,4 +1,3 @@
-// tommerst/finalsss/FINALSSS-ab98287e5a251ea0f90f45adc2a537ebda4a1511/draw/src/main/java/com/gabriel/draw/command/SetHeightCommand.java
 package com.gabriel.draw.command;
 
 import com.gabriel.draw.service.DrawingCommandAppService;
@@ -10,19 +9,18 @@ public class SetHeightCommand implements Command {
     private AppService appService;
     private int oldValue;
     private int newValue;
-    private Shape targetShape; // Store the specific shape affected
+    private Shape targetShape;
 
     public SetHeightCommand(AppService appService, int oldValue, int newValue) {
         this.appService = appService;
         this.oldValue = oldValue;
         this.newValue = newValue;
-        // Height usually applies only to the primary selected shape
-        this.targetShape = appService.getSelectedShape(); // Capture at creation
+        this.targetShape = appService.getSelectedShape();
     }
 
     @Override
     public void execute() {
-        if (targetShape != null && targetShape.isSelected()) { // Check if still selected? Optional.
+        if (targetShape != null && targetShape.isSelected()) {
             targetShape.setHeight(newValue);
             triggerRepaint();
         }
@@ -30,9 +28,9 @@ public class SetHeightCommand implements Command {
 
     @Override
     public void undo() {
-        if (targetShape != null) { // Apply even if no longer selected?
+        if (targetShape != null) {
             targetShape.setHeight(oldValue);
-            triggerRepaint(); // ESSENTIAL
+            triggerRepaint();
         }
     }
 

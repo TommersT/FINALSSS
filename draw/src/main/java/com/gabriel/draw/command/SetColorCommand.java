@@ -13,7 +13,7 @@ public class SetColorCommand implements Command {
     private Color oldValue;
     private Color newValue;
     private boolean appliedToSelection;
-    private List<Shape> targetShapes; // Store shapes affected
+    private List<Shape> targetShapes;
 
     public SetColorCommand(AppService appService, Color oldValue, Color newValue) {
         this.appService = appService;
@@ -46,7 +46,7 @@ public class SetColorCommand implements Command {
         } else {
             baseService.getDrawing().setColor(oldValue);
         }
-        triggerRepaint(); // ESSENTIAL
+        triggerRepaint();
     }
 
     @Override

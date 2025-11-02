@@ -2,9 +2,6 @@ package com.gabriel.property.validator.doubleNumber;
 
 import com.gabriel.property.validator.Validator;
 
-/**
- * Default implementation to validate double objects
- */
 public class DoubleValidator implements Validator {
 
     @Override

@@ -2,9 +2,6 @@ package com.gabriel.property.validator.floatNumber;
 
 import com.gabriel.property.validator.Validator;
 
-/**
- * Default implementation to validate float objects
- */
 public class FloatValidator implements Validator {
 
     @Override

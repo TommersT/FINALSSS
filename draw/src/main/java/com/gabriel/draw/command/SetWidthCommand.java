@@ -1,4 +1,3 @@
-// tommerst/finalsss/FINALSSS-ab98287e5a251ea0f90f45adc2a537ebda4a1511/draw/src/main/java/com/gabriel/draw/command/SetWidthCommand.java
 package com.gabriel.draw.command;
 
 import com.gabriel.draw.service.DrawingCommandAppService;
@@ -10,13 +9,12 @@ public class SetWidthCommand implements Command {
     private AppService appService;
     private int oldValue;
     private int newValue;
-    private Shape targetShape; // Store the specific shape affected
+    private Shape targetShape;
 
     public SetWidthCommand(AppService appService, int oldValue, int newValue) {
         this.appService = appService;
         this.oldValue = oldValue;
         this.newValue = newValue;
-        // Width usually applies only to the primary selected shape
         this.targetShape = appService.getSelectedShape(); // Capture at creation
     }
 

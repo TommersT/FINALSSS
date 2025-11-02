@@ -46,7 +46,7 @@ public class SetFillCommand implements Command {
         } else {
             baseService.getDrawing().setFill(oldValue);
         }
-        triggerRepaint(); // ESSENTIAL
+        triggerRepaint();
     }
 
     @Override

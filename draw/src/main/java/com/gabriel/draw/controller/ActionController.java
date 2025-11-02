@@ -9,10 +9,6 @@ import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.AppService;
 import lombok.Setter;
-// FIX: Changed wrong import package from org.drjekyll.fontchooser to com.gabriel.fontchooser
-// NOTE: fontchooser module is missing from repository, using basic font selection instead
-// import com.gabriel.fontchooser.FontDialog;
-
 import javax.swing.*;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileSystemView;
@@ -38,12 +34,10 @@ public class ActionController implements ActionListener {
     @Setter
     JFrame frame;
 
-    // FIX: Manually add setter that Lombok was supposed to create
     public void setComponent(Component component) {
         this.component = component;
     }
 
-    // FIX: Manually add setter for frame that Lombok was also supposed to create
     public void setFrame(JFrame frame) {
         this.frame = frame;
     }
@@ -56,7 +50,7 @@ public class ActionController implements ActionListener {
         this.drawingController = drawingController;
     }
 
-    public  ActionController(AppService appService){
+    public ActionController(AppService appService) {
         this.appService = appService;
         drawing = appService.getDrawing();
         imageFileService = new ImageFileService();
@@ -85,7 +79,7 @@ public class ActionController implements ActionListener {
             if (toolBar != null) toolBar.setActiveTool(cmd);
             if (drawingController != null) drawingController.updateStatusBarTool("Ellipse");
         } else if (ActionCommand.IMAGE.equals(cmd)) {
-            if(drawing.getImageFilename() == null) {
+            if (drawing.getImageFilename() == null) {
                 imageFileService.setImage(drawing);
             }
             appService.setShapeMode(ShapeMode.Image);
@@ -123,7 +117,6 @@ public class ActionController implements ActionListener {
                 drawing.setFilename(path);
                 appService.saveas(path);
             }
-
         } else if (ActionCommand.SELECT.equals(cmd)) {
             appService.clearSelections();
             appService.setShapeMode(ShapeMode.Select);
@@ -169,9 +162,6 @@ public class ActionController implements ActionListener {
                 }
             }
             appService.save();
-
-            // TODO Insert the handler for the File menuitems.
-
         } else if (ActionCommand.OPEN.equals(cmd)) {
             JFileChooser fileChooser = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
             fileChooser.addChoosableFileFilter(new FileFilter() {

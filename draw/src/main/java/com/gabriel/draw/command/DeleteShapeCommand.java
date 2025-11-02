@@ -4,12 +4,12 @@ import com.gabriel.draw.service.DrawingCommandAppService;
 import com.gabriel.drawfx.command.Command;
 import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.AppService;
-import java.util.List; // Import List
+import java.util.List;
 
 public class DeleteShapeCommand implements Command {
     private AppService underlyingAppService;
     private Shape shape;
-    private int originalIndex; // Store index for proper restoration
+    private int originalIndex;
 
     public DeleteShapeCommand(AppService appService, Shape shape) {
         if (appService instanceof DrawingCommandAppService) {
@@ -18,12 +18,10 @@ public class DeleteShapeCommand implements Command {
             this.underlyingAppService = appService;
         }
         this.shape = shape;
-        // Capture index *before* deletion occurs
-        // Ensure shape is not null before getting index
         if (this.shape != null) {
             this.originalIndex = underlyingAppService.getDrawing().getShapes().indexOf(this.shape);
         } else {
-            this.originalIndex = -1; // Indicate invalid state if shape is null
+            this.originalIndex = -1;
         }
     }
 

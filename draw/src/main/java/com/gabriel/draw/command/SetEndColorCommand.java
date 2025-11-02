@@ -46,7 +46,7 @@ public class SetEndColorCommand implements Command {
         } else {
             baseService.getDrawing().setEndColor(oldValue);
         }
-        triggerRepaint(); // ESSENTIAL
+        triggerRepaint();
     }
 
     @Override

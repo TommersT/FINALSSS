@@ -10,8 +10,8 @@ import java.util.List;
 
 public class SetFontFamilyCommand implements Command {
     private AppService appService;
-    private Font oldFontContext; // Store the complete font context (size, style)
-    private String oldFamily;    // Specific property changed
+    private Font oldFontContext;
+    private String oldFamily;
     private String newFamily;
     private boolean appliedToSelection;
     private List<Shape> targetShapes;
@@ -19,7 +19,7 @@ public class SetFontFamilyCommand implements Command {
     public SetFontFamilyCommand(AppService appService, Font oldFontContext, String newFamily) {
         this.appService = appService;
         this.oldFontContext = oldFontContext;
-        this.oldFamily = oldFontContext.getFamily(); // Extract old value
+        this.oldFamily = oldFontContext.getFamily();
         this.newFamily = newFamily;
         this.targetShapes = new ArrayList<>(appService.getSelectedShapes());
         this.appliedToSelection = !this.targetShapes.isEmpty();
@@ -30,7 +30,7 @@ public class SetFontFamilyCommand implements Command {
         AppService baseService = getUnderlyingService();
         if (appliedToSelection) {
             for (Shape shape : targetShapes) {
-                Font currentShapeFont = shape.getFont() != null ? shape.getFont() : oldFontContext; // Use context if shape has no font
+                Font currentShapeFont = shape.getFont() != null ? shape.getFont() : oldFontContext;
                 shape.setFont(new Font(newFamily, currentShapeFont.getStyle(), currentShapeFont.getSize()));
             }
         } else {
@@ -50,10 +50,10 @@ public class SetFontFamilyCommand implements Command {
                 }
             }
         } else {
-            // Restore global font using the original context
+
             baseService.getDrawing().setFont(oldFontContext);
         }
-        triggerRepaint(); // ESSENTIAL
+        triggerRepaint();
     }
 
     @Override

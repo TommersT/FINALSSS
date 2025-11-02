@@ -120,12 +120,10 @@ public class XmlDocumentService implements DocumentService {
                 root.appendChild(element);
             }
 
-            // Write to XML file
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer();
             DOMSource source = new DOMSource(document);
 
-            // Specify your local file path
             StreamResult result = new StreamResult(filename);
             transformer.transform(source, result);
 
@@ -133,7 +131,7 @@ public class XmlDocumentService implements DocumentService {
         }
         catch(Exception e){
             System.out.println("Error occurred " + e.getMessage());
-            e.printStackTrace(); // Also good to print the stack trace
+            e.printStackTrace();
         }
     }
     @Override
@@ -153,7 +151,7 @@ public class XmlDocumentService implements DocumentService {
             for (int i = 0; i < nodeList.getLength(); i++) {
                 Node node = nodeList.item(i);
                 NamedNodeMap map = node.getAttributes();
-                shape = null; // Reset shape
+                shape = null;
 
                 Node attr = map.getNamedItem("start.x");
                 x = (int) Double.parseDouble(attr.getNodeValue());
@@ -166,24 +164,20 @@ public class XmlDocumentService implements DocumentService {
                 attr = map.getNamedItem("height");
                 height = (int) Double.parseDouble(attr.getNodeValue());
 
-                // FIX: End point was calculated incorrectly
                 Point end = new Point(x + width, y + height);
 
-                // FIX: Load color safely with a default
                 attr = map.getNamedItem("color");
-                Color color = drawing.getColor(); // Default
+                Color color = drawing.getColor();
                 if(attr != null) {
                     color = convertColor(attr.getNodeValue());
                 }
 
-                // FIX: Load thickness safely with a default
                 attr = map.getNamedItem("thickness");
-                int thickness = drawing.getThickness(); // Default
+                int thickness = drawing.getThickness();
                 if(attr != null) {
                     thickness = Integer.parseInt(attr.getNodeValue());
                 }
 
-                // Load fill color
                 attr = map.getNamedItem("fill");
                 Color fillColor = null;
                 if(attr != null && !attr.getNodeValue().equals("null")) {
@@ -202,16 +196,16 @@ public class XmlDocumentService implements DocumentService {
                     shape = new com.gabriel.draw.model.Text(start);
                     shape.setWidth(width);
                     shape.setHeight(height);
-                    
+
                     attr = map.getNamedItem("text");
                     if (attr != null) {
                         shape.setText(attr.getNodeValue());
                     }
-                    
+
                     String fontFamily = "SansSerif";
                     int fontStyle = Font.PLAIN;
                     int fontSize = 12;
-                    
+
                     attr = map.getNamedItem("font.family");
                     if (attr != null) {
                         fontFamily = attr.getNodeValue();
@@ -224,7 +218,7 @@ public class XmlDocumentService implements DocumentService {
                     if (attr != null) {
                         fontSize = Integer.parseInt(attr.getNodeValue());
                     }
-                    
+
                     shape.setFont(new Font(fontFamily, fontStyle, fontSize));
                 } else if (shapeType.equals("Picture")) {
                     String imageFilename = "";
@@ -237,7 +231,6 @@ public class XmlDocumentService implements DocumentService {
                     shape.setHeight(height);
                 }
 
-                // FIX: Apply the loaded properties and add to drawing
                 if (shape != null) {
                     shape.setColor(color);
                     shape.setThickness(thickness);
@@ -248,15 +241,14 @@ public class XmlDocumentService implements DocumentService {
         }
         catch(Exception e){
             System.out.println(e.getMessage());
-            e.printStackTrace(); // Also good to print the stack trace
+            e.printStackTrace();
         }
     }
 
     public Color convertColor(String colorStr) {
-        // This method is fragile, but I will leave it as-is.
-        // A more robust method would use regex or handle nulls.
+
         if (colorStr == null) {
-            return Color.BLACK; // Default
+            return Color.BLACK;
         }
         try {
             Color color;
@@ -276,7 +268,7 @@ public class XmlDocumentService implements DocumentService {
             color = new Color(rcolor, gcolor, bcolor);
             return color;
         } catch (Exception e) {
-            return Color.BLACK; // Default on parsing error
+            return Color.BLACK;
         }
     }
 }

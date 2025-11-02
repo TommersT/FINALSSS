@@ -11,14 +11,12 @@ public class SetVisibleCommand implements Command {
     private AppService appService;
     private boolean oldValue;
     private boolean newValue;
-    // Visibility only makes sense for selected shapes
     private List<Shape> targetShapes;
 
     public SetVisibleCommand(AppService appService, boolean oldValue, boolean newValue) {
         this.appService = appService;
         this.oldValue = oldValue;
         this.newValue = newValue;
-        // Apply only to selected shapes
         this.targetShapes = new ArrayList<>(appService.getSelectedShapes());
     }
 
@@ -30,7 +28,6 @@ public class SetVisibleCommand implements Command {
             }
             triggerRepaint();
         }
-        // No global visibility setting
     }
 
     @Override
@@ -39,7 +36,7 @@ public class SetVisibleCommand implements Command {
             for (Shape shape : targetShapes) {
                 shape.setVisible(oldValue);
             }
-            triggerRepaint(); // ESSENTIAL
+            triggerRepaint();
         }
     }
 

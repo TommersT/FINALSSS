@@ -31,7 +31,7 @@ public class SetStartColorCommand implements Command {
                 shape.setStartColor(newValue);
             }
         } else {
-            baseService.getDrawing().setStartColor(newValue); // Set global default
+            baseService.getDrawing().setStartColor(newValue);
         }
         triggerRepaint();
     }
@@ -46,7 +46,7 @@ public class SetStartColorCommand implements Command {
         } else {
             baseService.getDrawing().setStartColor(oldValue);
         }
-        triggerRepaint(); // ESSENTIAL
+        triggerRepaint();
     }
 
     @Override

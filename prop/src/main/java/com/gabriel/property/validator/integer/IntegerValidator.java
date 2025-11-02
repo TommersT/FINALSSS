@@ -2,9 +2,6 @@ package com.gabriel.property.validator.integer;
 
 import com.gabriel.property.validator.Validator;
 
-/**
- * Default implementation to validate integer objects
- */
 public class IntegerValidator implements Validator {
 
     @Override

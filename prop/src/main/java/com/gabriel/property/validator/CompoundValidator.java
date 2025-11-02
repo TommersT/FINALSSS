@@ -2,9 +2,6 @@ package com.gabriel.property.validator;
 
 import java.util.Arrays;
 
-/**
- * Enabled the use for multiple validators on a single object
- */
 public class CompoundValidator implements Validator {
 
     protected Validator[] validators;

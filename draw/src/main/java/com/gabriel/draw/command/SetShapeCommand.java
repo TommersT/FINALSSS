@@ -18,15 +18,12 @@ public class SetShapeCommand implements Command {
 
     @Override
     public void execute() {
-        // Use the base service directly to set mode
         getUnderlyingService().setShapeMode(newValue);
-        // No repaint needed for changing the drawing tool mode itself
     }
 
     @Override
     public void undo() {
         getUnderlyingService().setShapeMode(oldValue);
-        // No repaint needed
     }
 
     @Override
@@ -40,6 +37,4 @@ public class SetShapeCommand implements Command {
         }
         return appService;
     }
-
-    // No triggerRepaint helper needed for this command
 }

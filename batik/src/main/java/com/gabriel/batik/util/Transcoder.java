@@ -9,7 +9,6 @@ import java.io.FileNotFoundException;
 
 public class Transcoder {
     public static Icon transcode(String svgFile, int width, int height) throws FileNotFoundException, TranscoderException  {
-        // Example using Batik to convert SVG to BufferedImage
         TranscoderInput input = new TranscoderInput(new FileInputStream("icon.svg"));
         BufferedImageTranscoder transcoder = new BufferedImageTranscoder(width, height);
         transcoder.transcode(input, null);

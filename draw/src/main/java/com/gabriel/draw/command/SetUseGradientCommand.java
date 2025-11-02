@@ -30,7 +30,7 @@ public class SetUseGradientCommand implements Command {
                 shape.setUseGradient(newValue);
             }
         } else {
-            baseService.getDrawing().setUseGradient(newValue); // Set global default
+            baseService.getDrawing().setUseGradient(newValue);
         }
         triggerRepaint();
     }
@@ -45,7 +45,7 @@ public class SetUseGradientCommand implements Command {
         } else {
             baseService.getDrawing().setUseGradient(oldValue);
         }
-        triggerRepaint(); // ESSENTIAL
+        triggerRepaint();
     }
 
     @Override

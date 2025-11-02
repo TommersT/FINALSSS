@@ -1,8 +1,5 @@
 package com.gabriel.property.validator;
 
-/**
- * Default string validator implementation
- */
 public class StringValidator implements Validator {
 
     protected String[] options;

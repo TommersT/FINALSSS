@@ -1,4 +1,3 @@
-// tommerst/finalsss/FINALSSS-ab98287e5a251ea0f90f45adc2a537ebda4a1511/draw/src/main/java/com/gabriel/draw/command/SetPositionCommand.java
 package com.gabriel.draw.command;
 
 import com.gabriel.draw.service.DrawingCommandAppService;
@@ -11,7 +10,7 @@ public class SetPositionCommand implements Command {
     private AppService appService;
     private int oldX, oldY;
     private int newX, newY;
-    private Shape targetShape; // Store the specific shape affected
+    private Shape targetShape;
 
     public SetPositionCommand(AppService appService, int oldX, int oldY, int newX, int newY) {
         this.appService = appService;
@@ -19,13 +18,12 @@ public class SetPositionCommand implements Command {
         this.oldY = oldY;
         this.newX = newX;
         this.newY = newY;
-        // Position usually applies only to the primary selected shape
-        this.targetShape = appService.getSelectedShape(); // Capture at creation
+        this.targetShape = appService.getSelectedShape();
     }
 
     @Override
     public void execute() {
-        if (targetShape != null && targetShape.isSelected()) { // Optional check
+        if (targetShape != null && targetShape.isSelected()) {
             targetShape.setLocation(new Point(newX, newY));
             triggerRepaint();
         }
@@ -33,9 +31,9 @@ public class SetPositionCommand implements Command {
 
     @Override
     public void undo() {
-        if (targetShape != null) { // Apply even if no longer selected?
+        if (targetShape != null) {
             targetShape.setLocation(new Point(oldX, oldY));
-            triggerRepaint(); // ESSENTIAL
+            triggerRepaint();
         }
     }
 

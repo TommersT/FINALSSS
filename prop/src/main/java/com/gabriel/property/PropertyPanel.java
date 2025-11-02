@@ -6,7 +6,7 @@ import com.gabriel.property.event.PropertyEventListener;
 import com.gabriel.property.exception.PropertyNotSupportedException;
 import com.gabriel.property.property.*;
 import com.gabriel.property.property.selection.SelectionProperty;
-import com.gabriel.property.cell.*; // Import cell components
+import com.gabriel.property.cell.*;
 
 import javax.swing.*;
 import javax.swing.table.TableCellEditor;
@@ -20,51 +20,36 @@ public class PropertyPanel extends JTable {
     protected EventDispatcher eventDispatcher;
     protected List<AbstractCellComponent> cellComponents;
     protected List<Property> properties;
-    private SelectionCellComponent selectionCellComponent; // Keep if needed
+    private SelectionCellComponent selectionCellComponent;
 
     public PropertyPanel(PropertyOptions options) {
         this.options = options;
-        // Create the model FIRST
         this.propertyModel = new PropertyModel(options.getHeaders());
-        // Set the model IMMEDIATELY
         setModel(propertyModel);
-
-        // Initialize other components
         this.eventDispatcher = new EventDispatcher();
         this.cellComponents = new ArrayList<>();
         this.properties = new ArrayList<>();
-
-        // Configure table appearance AFTER setting the model
         setRowHeight(options.getRowHeight());
         getTableHeader().setReorderingAllowed(false);
         setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        // Optional: setAutoResizeMode(JTable.AUTO_RESIZE_OFF); // If columns need specific widths
     }
 
-    // --- Core method to add a row structure ---
     public void addProperty(Property property, AbstractCellComponent cellComponent) {
         if (propertyModel == null) {
             System.err.println("PropertyPanel.addProperty: propertyModel is null!");
             return;
         }
-        // Add row data
         propertyModel.addRow(new Object[]{property.getName(), property.getValue()});
-        // Store references needed for rendering/editing
         cellComponents.add(cellComponent);
         properties.add(property);
-        // Initialize the cell
         cellComponent.init(options, eventDispatcher);
-        // Optional: dispatch event
-        // eventDispatcher.dispatchPropertyAddedEvent(property);
     }
 
-    // --- Convenience method using default cell components ---
     public void addProperty(Property property) throws PropertyNotSupportedException {
         AbstractCellComponent cellComp = createCellComponent(property);
         addProperty(property, cellComp);
     }
 
-    // --- Helper to create default cell components ---
     private AbstractCellComponent createCellComponent(Property property) throws PropertyNotSupportedException {
         if (property instanceof IntegerProperty) {
             return new IntegerCellComponent((IntegerProperty) property);
@@ -90,7 +75,6 @@ public class PropertyPanel extends JTable {
         }
     }
 
-    // --- Methods for removing properties ---
     public void removeProperty(Property property) {
         int index = properties.indexOf(property);
         if (index != -1) {
@@ -106,17 +90,14 @@ public class PropertyPanel extends JTable {
         }
     }
 
-    // --- Clear method ---
-    // Subclasses may override this to re-initialize structure
     public void clear() {
         if (propertyModel != null) {
-            propertyModel.clear(); // Uses efficient setRowCount(0)
+            propertyModel.clear();
         }
         cellComponents.clear();
         properties.clear();
     }
 
-    // --- Event Listener methods ---
     public void addEventListener(PropertyEventListener eventListener) {
         eventDispatcher.addEventListener(eventListener);
     }
@@ -125,7 +106,6 @@ public class PropertyPanel extends JTable {
         eventDispatcher.removeEventListener(eventListener);
     }
 
-    // --- Cell Editor/Renderer delegation ---
     @Override
     public TableCellEditor getCellEditor(int row, int column) {
         if (column == 1 && row >= 0 && row < cellComponents.size()) {

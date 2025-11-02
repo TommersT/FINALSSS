@@ -27,8 +27,7 @@ public class SetTextCommand implements Command {
         AppService baseService = getUnderlyingService();
         if (appliedToSelection) {
             for (Shape shape : targetShapes) {
-                // Should ideally only apply to Text shapes
-                // if (shape instanceof com.gabriel.draw.model.Text)
+
                 shape.setText(newValue);
             }
         } else {
@@ -42,13 +41,12 @@ public class SetTextCommand implements Command {
         AppService baseService = getUnderlyingService();
         if (appliedToSelection) {
             for (Shape shape : targetShapes) {
-                // if (shape instanceof com.gabriel.draw.model.Text)
                 shape.setText(oldValue);
             }
         } else {
             baseService.getDrawing().setText(oldValue);
         }
-        triggerRepaint(); // ESSENTIAL
+        triggerRepaint();
     }
 
     @Override

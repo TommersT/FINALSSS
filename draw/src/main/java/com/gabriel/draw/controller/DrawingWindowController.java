@@ -17,7 +17,7 @@ public class DrawingWindowController implements WindowListener,
     }
     @Override
     public void windowGainedFocus(WindowEvent e) {
-   //
+
     }
 
     @Override

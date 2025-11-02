@@ -3,11 +3,6 @@ package com.gabriel.property.property;
 import com.gabriel.property.validator.NullValidator;
 import com.gabriel.property.validator.Validator;
 
-/**
- * Abstract property implementation
- *
- * @param <T>
- */
 public abstract class AbstractProperty<T> implements Property<T> {
 
     protected T value;
@@ -48,11 +43,6 @@ public abstract class AbstractProperty<T> implements Property<T> {
         return validator;
     }
 
-    /**
-     * Sets the validator for this object
-     *
-     * @param validator Validator
-     */
     public void setValidator(Validator validator) {
         this.validator = validator;
     }

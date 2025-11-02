@@ -1,6 +1,5 @@
 package com.gabriel.draw.component;
 
-
 import com.gabriel.drawfx.model.Drawing;
 import com.gabriel.drawfx.model.Shape;
 import com.gabriel.drawfx.service.AppService;
@@ -23,15 +22,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-
 public class PropertySheet extends PropertyPanel {
 
     private final Map<String, Property<?>> propertyMap = new HashMap<>();
     private volatile boolean isPopulating = false;
     private volatile boolean isUpdatingFromController = false;
     private boolean editingEnabled = false;
-    private boolean isInitialized = false; // Track initialization
-
+    private boolean isInitialized = false;
 
     public PropertySheet(PropertyOptions options) {
         super(options);
@@ -47,7 +44,6 @@ public class PropertySheet extends PropertyPanel {
         propertyMap.clear();
         if (propertyModel != null) propertyModel.clear();
 
-        // Add core properties - Object Type FIRST
         addInternalProperty(new StringProperty("Object Type", "None"));
         addInternalProperty(new ColorProperty("Fore Color", Color.BLACK));
         addInternalProperty(new ColorProperty("Fill Color", Color.WHITE));
@@ -105,8 +101,6 @@ public class PropertySheet extends PropertyPanel {
             System.err.println("PropertySheet: Error configuring columns: " + e.getMessage());
         }
         setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
-
-        // Set default row height for better appearance
         setRowHeight(24);
     }
 
@@ -155,7 +149,6 @@ public class PropertySheet extends PropertyPanel {
             return;
         }
 
-        // Check if we need to reinitialize
         if (!isInitialized || propertyMap.isEmpty() || getRowCount() != propertyMap.size()) {
             System.err.println("PropertySheet.populateTable: Structure mismatch detected.");
             System.err.println("  isInitialized: " + isInitialized);
@@ -178,13 +171,11 @@ public class PropertySheet extends PropertyPanel {
                 System.out.println("PropertySheet: Shape class: " + shape.getClass().getName());
             }
 
-            // Determine Object Type
             String objectType = determineObjectType(shape, shapeSelected);
             System.out.println("PropertySheet: Determined Object Type: '" + objectType + "'");
 
             setEditingEnabled(shapeSelected);
 
-            // Read current values
             Color currentForeColor = shapeSelected ? shape.getColor() : (drawing != null ? drawing.getColor() : Color.BLACK);
             Color currentFillColor = shapeSelected ? shape.getFill() : (drawing != null ? drawing.getFill() : Color.WHITE);
             Color currentStartColor = shapeSelected ? shape.getStartColor() : (drawing != null ? drawing.getStartColor() : Color.LIGHT_GRAY);
@@ -197,11 +188,8 @@ public class PropertySheet extends PropertyPanel {
             int currentHeight = shapeSelected ? shape.getHeight() : 0;
             int currentThickness = shapeSelected ? shape.getThickness() : (drawing != null ? drawing.getThickness() : 1);
 
-            // Update properties with detailed logging
             System.out.println("PropertySheet: Updating Object Type to: '" + objectType + "'");
             updateStringPropertyDirect("Object Type", objectType);
-
-            // Verify the update
             verifyPropertyValue("Object Type");
 
             updateColorPropertyDirect("Fore Color", currentForeColor);
@@ -226,9 +214,6 @@ public class PropertySheet extends PropertyPanel {
         }
     }
 
-    /**
-     * Verify that a property value was actually set
-     */
     private void verifyPropertyValue(String propertyName) {
         Property<?> prop = propertyMap.get(propertyName);
         if (prop != null) {
@@ -264,7 +249,6 @@ public class PropertySheet extends PropertyPanel {
             System.out.println("PropertySheet.determineObjectType: Extracted class name: '" + className + "'");
         }
 
-        // Map specific class names to display names
         String displayName;
         switch (className) {
             case "TextShape":
@@ -293,7 +277,6 @@ public class PropertySheet extends PropertyPanel {
                 displayName = "Polyline";
                 break;
             default:
-                // Remove "Shape" suffix if present
                 if (className.endsWith("Shape")) {
                     displayName = className.substring(0, className.length() - 5);
                 } else {
@@ -309,7 +292,6 @@ public class PropertySheet extends PropertyPanel {
         System.out.println("PropertySheet.updatePropertyDirectly: " + name + " = " + value);
 
         if (isPopulating || (!isUpdatingFromController && CommandService.isExecutingCommand())) {
-            // Allow updates during population
             if (!isPopulating) {
                 System.out.println("  Skipping update (command executing)");
                 return;
@@ -345,7 +327,6 @@ public class PropertySheet extends PropertyPanel {
                 boolean typesCompatible = true;
                 Object valueToSet = value;
 
-                // Type checking
                 if (p.getValue() != null && value != null && !p.getValue().getClass().isInstance(value)) {
                     if (!((p.getValue() instanceof Integer && value instanceof Integer) ||
                             (p.getValue() instanceof Boolean && value instanceof Boolean) ||
@@ -359,7 +340,6 @@ public class PropertySheet extends PropertyPanel {
 
                 if (typesCompatible) {
                     try {
-                        // Update property object
                         ((Property<Object>) p).setValue(valueToSet);
                         System.out.println("  Property object updated successfully");
                     } catch (ClassCastException e) {
@@ -367,11 +347,9 @@ public class PropertySheet extends PropertyPanel {
                         return;
                     }
 
-                    // Update table model
                     Runnable updateModelTask = () -> {
                         TableModel model = getModel();
                         if (model instanceof PropertyModel && finalRowIndex < model.getRowCount()) {
-                            // Stop any active editing
                             if (isEditing() && getEditingRow() == finalRowIndex && getEditingColumn() == 1) {
                                 TableCellEditor editor = getCellEditor(finalRowIndex, 1);
                                 if (editor != null) {
@@ -381,11 +359,8 @@ public class PropertySheet extends PropertyPanel {
                                 }
                             }
 
-                            // Update the model
                             ((PropertyModel) model).setValueAt(valueToSet, finalRowIndex, 1);
                             System.out.println("  Model updated at row " + finalRowIndex + " with value: " + valueToSet);
-
-                            // Force a repaint of this row
                             repaint(getCellRect(finalRowIndex, 1, true));
                         }
                     };
@@ -434,7 +409,7 @@ public class PropertySheet extends PropertyPanel {
                 Object nameInRow = propertyModel.getValueAt(i, 0);
                 if (name.equals(nameInRow)) return i;
             } catch (Exception e) {
-                System.err.println("Error getting row index for "+name+": "+e);
+                System.err.println("Error getting row index for " + name + ": " + e);
                 return -1;
             }
         }
@@ -477,31 +452,25 @@ public class PropertySheet extends PropertyPanel {
         Color background;
         Color foreground;
 
-        // Value column (column 1) styling
         if (column == 1) {
-            // Set light gray background for value column
-            background = new Color(240, 240, 240); // Light gray
+            background = new Color(240, 240, 240);
             foreground = Color.BLACK;
 
-            // If row is selected, use selection colors
             if (rowIsSelectedInTable) {
                 background = getSelectionBackground();
                 foreground = getSelectionForeground();
             }
 
-            // Darker gray for non-editable cells
             if (!editable) {
-                foreground = new Color(100, 100, 100); // Darker gray text
+                foreground = new Color(100, 100, 100);
             }
 
-            // Center align text components
             if (c instanceof JLabel) {
                 ((JLabel) c).setHorizontalAlignment(JLabel.CENTER);
             } else if (c instanceof JTextField) {
                 ((JTextField) c).setHorizontalAlignment(JTextField.CENTER);
             }
         } else {
-            // Property name column (column 0) - default styling
             background = getBackground();
             foreground = getForeground();
 
@@ -515,7 +484,6 @@ public class PropertySheet extends PropertyPanel {
         c.setForeground(foreground);
         c.setEnabled(editable || column == 0);
 
-        // Special handling for checkboxes
         if (c instanceof JCheckBox) {
             JCheckBox checkBox = (JCheckBox) c;
             checkBox.setOpaque(true);
@@ -556,8 +524,7 @@ public class PropertySheet extends PropertyPanel {
             if (col == 0) {
                 Object pName = getValueAt(row, 0);
                 if (pName instanceof String) return (String) pName;
-            }
-            else if (col == 1) {
+            } else if (col == 1) {
                 Object v = getValueAt(row, 1);
                 if (v != null) {
                     return v.toString();
